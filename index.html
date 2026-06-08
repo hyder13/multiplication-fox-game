@@ -351,39 +351,68 @@ function play(seq){
   const t = ac.currentTime + 0.02;
   seq.forEach(n => voice(n.f, t + (n.t||0), n.d, n.o));
 }
-// 答對：溫暖的木琴雙音（上行大三度）
-const sGood=()=>play([
+// ---- 合成後備音（音檔載入失敗時自動使用） ----
+const synGood=()=>play([
   {f:784, t:0,    d:0.20, o:{type:'triangle',vol:0.32,detune:6,filter:3200}},
   {f:1047,t:0.075,d:0.30, o:{type:'triangle',vol:0.28,detune:6,filter:3600}},
 ]);
-// 連續答對 / 快答：閃亮上行三連音（像收集金幣）
-const sFast=()=>play([
+const synFast=()=>play([
   {f:1047,t:0,   d:0.11,o:{type:'square',  vol:0.16,filter:2600}},
   {f:1319,t:0.06,d:0.11,o:{type:'square',  vol:0.16,filter:2900}},
   {f:1568,t:0.12,d:0.26,o:{type:'square',  vol:0.18,filter:3300}},
   {f:2093,t:0.12,d:0.26,o:{type:'triangle',vol:0.10,filter:5000}},
 ]);
-// 答錯：柔和不嚇人的「嗚喔」下行兩音
-const sBad =()=>play([
+const synBad =()=>play([
   {f:392,t:0,    d:0.16,o:{type:'sine',vol:0.30,filter:1800}},
   {f:294,t:0.13, d:0.28,o:{type:'sine',vol:0.26,filter:1500}},
 ]);
-// 倒數 / 最後幾秒：輕巧的木魚點擊
-const sTick=()=>play([{f:1100,t:0,d:0.05,o:{type:'sine',vol:0.16,atk:0.004}}]);
-// 過關：歡樂號角 C-E-G-C + 高音閃光
-const sWin =()=>play([
+const synTick=()=>play([{f:1100,t:0,d:0.05,o:{type:'sine',vol:0.16,atk:0.004}}]);
+const synWin =()=>play([
   {f:523, t:0.00,d:0.20,o:{type:'triangle',vol:0.30,detune:6,filter:3500}},
   {f:659, t:0.13,d:0.20,o:{type:'triangle',vol:0.30,detune:6,filter:3500}},
   {f:784, t:0.26,d:0.20,o:{type:'triangle',vol:0.30,detune:6,filter:3500}},
   {f:1047,t:0.39,d:0.55,o:{type:'triangle',vol:0.34,detune:8,filter:4200}},
   {f:1568,t:0.42,d:0.55,o:{type:'sine',    vol:0.12,filter:6000}},
 ]);
-// 時間到：溫柔下行（鼓勵不沮喪）
-const sLose=()=>play([
+const synLose=()=>play([
   {f:587,t:0,    d:0.22,o:{type:'triangle',vol:0.26,filter:2400}},
   {f:466,t:0.16, d:0.24,o:{type:'triangle',vol:0.24,filter:2100}},
   {f:349,t:0.34, d:0.42,o:{type:'triangle',vol:0.24,detune:5,filter:1900}},
 ]);
+
+// ---- 原創音效檔（鐘琴泛音+殘響）；用 Audio 元素，雙擊版與網頁版皆可播 ----
+const SFX={correct:{file:'correct.wav',vol:0.7},combo:{file:'combo.wav',vol:0.6},
+  wrong:{file:'wrong.wav',vol:0.6},tick:{file:'tick.wav',vol:0.5},
+  win:{file:'win.wav',vol:0.8},lose:{file:'lose.wav',vol:0.7}};
+const sfxPool={}, sfxOk={};
+function loadSfx(){
+  for(const k in SFX){
+    try{
+      const a=new Audio(SFX[k].file); a.preload='auto'; a.volume=SFX[k].vol;
+      a.addEventListener('canplaythrough',()=>{sfxOk[k]=true;},{once:true});
+      a.addEventListener('error',()=>{sfxOk[k]=false;});
+      sfxPool[k]=a;
+    }catch(e){ sfxOk[k]=false; }
+  }
+}
+function playSfx(name){
+  if(!soundOn || sfxOk[name]===false) return false;
+  const base=sfxPool[name]; if(!base) return false;
+  try{
+    const a=base.cloneNode(); a.volume=SFX[name].vol;
+    const p=a.play();
+    if(p&&p.catch) p.catch(()=>{});
+    return true;
+  }catch(e){ return false; }
+}
+// 對外的音效：先用音檔，失敗則用合成音
+const sGood=()=>{ if(!playSfx('correct')) synGood(); };
+const sFast=()=>{ if(!playSfx('combo'))   synFast(); };
+const sBad =()=>{ if(!playSfx('wrong'))   synBad(); };
+const sTick=()=>{ if(!playSfx('tick'))    synTick(); };
+const sWin =()=>{ if(!playSfx('win'))     synWin(); };
+const sLose=()=>{ if(!playSfx('lose'))    synLose(); };
+loadSfx();
 
 /* ===================== DOM ===================== */
 const $=s=>document.querySelector(s);
