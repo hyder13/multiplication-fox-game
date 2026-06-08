@@ -42,6 +42,10 @@
   @keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-10px) rotate(3deg);}}
 
   .panel{background:var(--card);border-radius:24px;padding:16px;box-shadow:0 14px 30px rgba(40,20,80,.25);}
+  .modetabs{display:flex;gap:8px;background:#eef0ff;border-radius:16px;padding:6px;margin-bottom:14px;}
+  .mtab{flex:1;border:none;border-radius:12px;padding:13px 8px;font-size:16px;font-weight:800;cursor:pointer;background:transparent;color:var(--muted);transition:background .15s,color .15s,transform .08s;}
+  .mtab.active{background:#fff;color:var(--ink);box-shadow:0 3px 8px rgba(40,20,80,.15);}
+  .mtab:active{transform:scale(.97);}
   .stages{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px;}
   .stage{
     position:relative;border:none;border-radius:18px;padding:14px 12px 12px;cursor:pointer;
@@ -128,6 +132,7 @@
     .title p{font-size:19px;}
     .mascot{font-size:86px;}
     .panel{border-radius:30px;padding:24px;}
+    .modetabs{padding:8px;gap:10px;} .mtab{font-size:20px;padding:16px;}
     .stages{gap:18px;grid-template-columns:repeat(3,1fr);}
     .stage{border-radius:22px;padding:18px 16px;}
     .stage .num{font-size:14px;} .stage .name{font-size:23px;} .stage .stars{font-size:18px;}
@@ -171,6 +176,10 @@
       <p>3 分鐘衝 100 分，一關一關變高手！</p>
     </div>
     <div class="panel">
+      <div class="modetabs">
+        <button class="mtab active" data-mode="mult">✖️ 九九乘法</button>
+        <button class="mtab" data-mode="addsub">➕➖ 加減法</button>
+      </div>
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <strong style="font-size:17px;">選擇關卡</strong>
         <button class="btn ghost" id="howBtn" style="padding:8px 14px;font-size:14px;">怎麼玩？</button>
@@ -257,18 +266,29 @@ const ROUND_SEC = 180;       // 每局秒數（3 分鐘）
 const FAST_MS = 4000;        // 多少毫秒內算「快」
 const PTS_FAST = 10, PTS_SLOW = 5;
 
-const STAGES = [
-  {id:'t2', type:'table', n:2, name:'2 的乘法'},
-  {id:'t3', type:'table', n:3, name:'3 的乘法'},
-  {id:'t4', type:'table', n:4, name:'4 的乘法'},
-  {id:'t5', type:'table', n:5, name:'5 的乘法'},
-  {id:'t6', type:'table', n:6, name:'6 的乘法'},
-  {id:'t7', type:'table', n:7, name:'7 的乘法'},
-  {id:'t8', type:'table', n:8, name:'8 的乘法'},
-  {id:'t9', type:'table', n:9, name:'9 的乘法'},
-  {id:'mix', type:'mixed', name:'綜合挑戰', special:true},
-  {id:'rev', type:'reverse', name:'倒背高手', special:true},
-];
+const STAGE_SETS = {
+  mult: [
+    {id:'t2', type:'table', n:2, name:'2 的乘法'},
+    {id:'t3', type:'table', n:3, name:'3 的乘法'},
+    {id:'t4', type:'table', n:4, name:'4 的乘法'},
+    {id:'t5', type:'table', n:5, name:'5 的乘法'},
+    {id:'t6', type:'table', n:6, name:'6 的乘法'},
+    {id:'t7', type:'table', n:7, name:'7 的乘法'},
+    {id:'t8', type:'table', n:8, name:'8 的乘法'},
+    {id:'t9', type:'table', n:9, name:'9 的乘法'},
+    {id:'mix', type:'mixed', name:'綜合挑戰', special:true},
+    {id:'rev', type:'reverse', name:'倒背高手', special:true},
+  ],
+  addsub: [
+    {id:'a1', type:'add', maxSum:10, name:'加法入門'},
+    {id:'a2', type:'add', name:'加法進位'},
+    {id:'s1', type:'sub', name:'減法練習'},
+    {id:'m1', type:'addsub', name:'加減混合'},
+    {id:'m2', type:'addsub', name:'心算高手', special:true},
+  ],
+};
+let curMode = 'mult';
+let STAGES = STAGE_SETS[curMode];
 
 /* ===================== 進度存檔 ===================== */
 const SAVE_KEY = 'mult99_save_v1';
@@ -357,6 +377,27 @@ function makeQuestion(stage){
       if(x*y!==prod) opts.add(`${x}×${y}`);
     }
     return { text:`${prod}`, sub:'哪一個算式答案是這個數字？', options:shuffle([...opts]), answer:correct };
+  }
+  if(stage.type==='add' || stage.type==='sub' || stage.type==='addsub'){
+    let kind=stage.type;
+    if(kind==='addsub') kind = Math.random()<0.5 ? 'add' : 'sub';
+    let a,b,ans,op;
+    if(kind==='add'){
+      if(stage.maxSum){ a=rnd(1,stage.maxSum-1); b=rnd(1,stage.maxSum-a); }
+      else { a=rnd(1,9); b=rnd(1,9); }
+      ans=a+b; op='+';
+    } else { // sub：不會是負數
+      a=rnd(1,9); b=rnd(1,9); if(b>a){ const t=a; a=b; b=t; } ans=a-b; op='−';
+    }
+    const opts=new Set([ans]);
+    let guard=0;
+    while(opts.size<4 && guard++<60){
+      const deltas=[1,-1,2,-2,3,-3,b,-b];
+      let cand=ans+deltas[rnd(0,deltas.length-1)];
+      if(cand<0) cand=ans+rnd(1,5);
+      opts.add(cand);
+    }
+    return { text:`${a} ${op} ${b}`, sub:'= ?', options:shuffle([...opts].map(String)), answer:String(ans) };
   }
   let a,b;
   if(stage.type==='table'){ a=stage.n; b=rnd(1,9); if(Math.random()<0.5){ [a,b]=[b,a]; } }
@@ -563,11 +604,20 @@ $('#homeBtn').onclick=()=>{ show('home'); renderStages(); };
 $('#retryBtn').onclick=()=>startGame(G.idx);
 $('#howBtn').onclick=()=>$('#howModal').classList.add('active');
 $('#howClose').onclick=()=>$('#howModal').classList.remove('active');
-$('#resetBtn').onclick=()=>{ if(confirm('確定要清除所有過關紀錄嗎？')){ save={stages:{},soundOn}; persist(); renderStages(); } };
+$('#resetBtn').onclick=()=>{ if(confirm('確定要清除所有過關紀錄嗎？')){ save={stages:{},soundOn,mode:curMode}; persist(); renderStages(); } };
+
+// 切換玩法：乘法 / 加減法
+function setMode(m){
+  if(!STAGE_SETS[m]) m='mult';
+  curMode=m; STAGES=STAGE_SETS[m]; save.mode=m; persist();
+  document.querySelectorAll('.mtab').forEach(t=>t.classList.toggle('active', t.dataset.mode===m));
+  renderStages();
+}
+document.querySelectorAll('.mtab').forEach(t=>{ t.onclick=()=>{ if(soundOn) sTick(); setMode(t.dataset.mode); }; });
 
 setSoundIcon();
 setMascot($('#homeMascot'),'idle');
-renderStages();
+setMode(save.mode || 'mult');
 </script>
 </body>
 </html>
