@@ -361,9 +361,9 @@ function audio(){
   if(!actx){
     try{
       actx = new (window.AudioContext||window.webkitAudioContext)();
-      master = actx.createGain(); master.gain.value = 0.55;
+      master = actx.createGain(); master.gain.value = 0.42;
       const comp = actx.createDynamicsCompressor();  // 柔化、避免破音
-      comp.threshold.value = -18; comp.ratio.value = 3;
+      comp.threshold.value = -24; comp.ratio.value = 2.2;
       master.connect(comp); comp.connect(actx.destination);
     }catch(e){}
   }
@@ -373,9 +373,9 @@ function audio(){
 function voice(freq, t0, dur, opt){
   opt = opt || {};
   const ac = audio(); if(!ac) return;
-  const type = opt.type || 'triangle';
-  const vol  = opt.vol == null ? 0.3 : opt.vol;
-  const atk  = opt.atk == null ? 0.012 : opt.atk;
+  const type = opt.type || 'sine';
+  const vol  = opt.vol == null ? 0.2 : opt.vol;
+  const atk  = opt.atk == null ? 0.018 : opt.atk;
   const g = ac.createGain();
   g.gain.setValueAtTime(0.0001, t0);
   g.gain.exponentialRampToValueAtTime(vol, t0 + atk);
@@ -403,37 +403,51 @@ function play(seq){
 }
 // ---- 合成後備音（音檔載入失敗時自動使用） ----
 const synGood=()=>play([
-  {f:784, t:0,    d:0.20, o:{type:'triangle',vol:0.32,detune:6,filter:3200}},
-  {f:1047,t:0.075,d:0.30, o:{type:'triangle',vol:0.28,detune:6,filter:3600}},
+  {f:659, t:0,    d:0.18, o:{type:'sine',vol:0.18,filter:2200}},
+  {f:880, t:0.08, d:0.26, o:{type:'triangle',vol:0.16,detune:4,filter:2600}},
 ]);
 const synFast=()=>play([
-  {f:1047,t:0,   d:0.11,o:{type:'square',  vol:0.16,filter:2600}},
-  {f:1319,t:0.06,d:0.11,o:{type:'square',  vol:0.16,filter:2900}},
-  {f:1568,t:0.12,d:0.26,o:{type:'square',  vol:0.18,filter:3300}},
-  {f:2093,t:0.12,d:0.26,o:{type:'triangle',vol:0.10,filter:5000}},
+  {f:784, t:0,    d:0.10,o:{type:'triangle',vol:0.11,filter:2200}},
+  {f:988, t:0.07, d:0.12,o:{type:'triangle',vol:0.12,filter:2400}},
+  {f:1175,t:0.14, d:0.24,o:{type:'sine',    vol:0.13,filter:2800}},
 ]);
 const synBad =()=>play([
-  {f:392,t:0,    d:0.16,o:{type:'sine',vol:0.30,filter:1800}},
-  {f:294,t:0.13, d:0.28,o:{type:'sine',vol:0.26,filter:1500}},
+  {f:330,t:0,    d:0.16,o:{type:'sine',vol:0.16,filter:1200}},
+  {f:277,t:0.14, d:0.30,o:{type:'sine',vol:0.13,filter:1000}},
 ]);
-const synTick=()=>play([{f:1100,t:0,d:0.05,o:{type:'sine',vol:0.16,atk:0.004}}]);
+const synTick=()=>play([{f:880,t:0,d:0.045,o:{type:'sine',vol:0.07,atk:0.006,filter:1800}}]);
 const synWin =()=>play([
-  {f:523, t:0.00,d:0.20,o:{type:'triangle',vol:0.30,detune:6,filter:3500}},
-  {f:659, t:0.13,d:0.20,o:{type:'triangle',vol:0.30,detune:6,filter:3500}},
-  {f:784, t:0.26,d:0.20,o:{type:'triangle',vol:0.30,detune:6,filter:3500}},
-  {f:1047,t:0.39,d:0.55,o:{type:'triangle',vol:0.34,detune:8,filter:4200}},
-  {f:1568,t:0.42,d:0.55,o:{type:'sine',    vol:0.12,filter:6000}},
+  {f:523, t:0.00,d:0.20,o:{type:'triangle',vol:0.18,detune:4,filter:2600}},
+  {f:659, t:0.13,d:0.20,o:{type:'triangle',vol:0.18,detune:4,filter:2600}},
+  {f:784, t:0.26,d:0.24,o:{type:'triangle',vol:0.18,detune:4,filter:2800}},
+  {f:1047,t:0.42,d:0.48,o:{type:'sine',    vol:0.16,filter:3200}},
 ]);
 const synLose=()=>play([
-  {f:587,t:0,    d:0.22,o:{type:'triangle',vol:0.26,filter:2400}},
-  {f:466,t:0.16, d:0.24,o:{type:'triangle',vol:0.24,filter:2100}},
-  {f:349,t:0.34, d:0.42,o:{type:'triangle',vol:0.24,detune:5,filter:1900}},
+  {f:523,t:0,    d:0.20,o:{type:'sine',vol:0.14,filter:1600}},
+  {f:392,t:0.18, d:0.34,o:{type:'sine',vol:0.13,filter:1300}},
+  {f:330,t:0.42, d:0.38,o:{type:'triangle',vol:0.10,filter:1200}},
 ]);
+const synClick=()=>play([
+  {f:620,t:0,    d:0.035,o:{type:'sine',vol:0.055,atk:0.004,filter:1600}},
+  {f:420,t:0.026,d:0.050,o:{type:'sine',vol:0.045,atk:0.004,filter:1200}},
+]);
+const synDeny=()=>play([
+  {f:294,t:0,    d:0.13,o:{type:'sine',vol:0.12,filter:1100}},
+  {f:247,t:0.12, d:0.20,o:{type:'sine',vol:0.10,filter:950}},
+]);
+function synStar(i){
+  const notes=[784,988,1175];
+  const f=notes[Math.max(0,Math.min(notes.length-1,i))];
+  play([
+    {f,     t:0,    d:0.20,o:{type:'triangle',vol:0.11,filter:2600}},
+    {f:f*2, t:0.03, d:0.16,o:{type:'sine',    vol:0.035,filter:3800}},
+  ]);
+}
 
 // ---- 原創音效檔（鐘琴泛音+殘響）；用 Audio 元素，雙擊版與網頁版皆可播 ----
-const SFX={correct:{file:'correct.wav',vol:0.7},combo:{file:'combo.wav',vol:0.6},
-  wrong:{file:'wrong.wav',vol:0.6},tick:{file:'tick.wav',vol:0.5},
-  win:{file:'win.wav',vol:0.8},lose:{file:'lose.wav',vol:0.7}};
+const SFX={correct:{file:'correct.wav',vol:0.45},combo:{file:'combo.wav',vol:0.38},
+  wrong:{file:'wrong.wav',vol:0.34},tick:{file:'tick.wav',vol:0.22},
+  win:{file:'win.wav',vol:0.48},lose:{file:'lose.wav',vol:0.40}};
 const sfxPool={}, sfxOk={};
 function loadSfx(){
   for(const k in SFX){
@@ -462,6 +476,9 @@ const sBad =()=>{ if(!playSfx('wrong'))   synBad(); };
 const sTick=()=>{ if(!playSfx('tick'))    synTick(); };
 const sWin =()=>{ if(!playSfx('win'))     synWin(); };
 const sLose=()=>{ if(!playSfx('lose'))    synLose(); };
+const sClick=()=>synClick();
+const sDeny =()=>synDeny();
+const sStar =(i)=>synStar(i);
 loadSfx();
 
 /* ===================== DOM ===================== */
@@ -495,8 +512,8 @@ function renderStages(){
       <div class="name">${st.name}</div>
       <div class="stars">${unlocked?stars:''}</div>
       ${rec.best?`<div class="best">最佳 ${rec.best}</div>`:''}`;
-    if(unlocked) b.onclick=()=>startGame(idx);
-    else b.onclick=()=>{ sBad(); b.animate([{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}],{duration:300}); };
+    if(unlocked) b.onclick=()=>{ sClick(); startGame(idx); };
+    else b.onclick=()=>{ sDeny(); b.animate([{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}],{duration:300}); };
     box.appendChild(b);
   });
 }
@@ -688,14 +705,15 @@ function endGame(cleared){
     $('#resStars').textContent='⭐'.repeat(stars)+'☆'.repeat(3-stars);
     $('#nextBtn').style.display = (last||!isUnlocked(G.idx+1)&&false)?'' : '';
     $('#nextBtn').textContent = last?'再挑戰一次 🔁':'下一關 ▶';
-    $('#nextBtn').onclick = last?()=>startGame(G.idx):()=>startGame(G.idx+1);
+    $('#nextBtn').onclick = last?()=>{ sClick(); startGame(G.idx); }:()=>{ sClick(); startGame(G.idx+1); };
     sWin(); confettiBurst();
+    for(let i=0;i<stars;i++) setTimeout(()=>sStar(i), 420+i*220);
   } else {
     setMascot($('#resMascot'),'cheer');
     $('#resTitle').textContent='時間到！再拚一次';
     $('#resStars').textContent='☆☆☆';
     $('#nextBtn').textContent='再拚一次 🔁';
-    $('#nextBtn').onclick=()=>startGame(G.idx);
+    $('#nextBtn').onclick=()=>{ sClick(); startGame(G.idx); };
     sLose();
   }
   show('result');
@@ -747,12 +765,12 @@ function toggleFullscreen(){
     (document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document);
   }
 }
-var fsBtn=$('#fsBtn'); if(fsBtn) fsBtn.onclick=toggleFullscreen;
-$('#quitBtn').onclick=()=>{ clearInterval(timerId); show('home'); renderStages(); };
-$('#homeBtn').onclick=()=>{ show('home'); renderStages(); };
-$('#retryBtn').onclick=()=>startGame(G.idx);
-$('#howBtn').onclick=()=>$('#howModal').classList.add('active');
-$('#howClose').onclick=()=>$('#howModal').classList.remove('active');
+var fsBtn=$('#fsBtn'); if(fsBtn) fsBtn.onclick=()=>{ sClick(); toggleFullscreen(); };
+$('#quitBtn').onclick=()=>{ sClick(); clearInterval(timerId); show('home'); renderStages(); };
+$('#homeBtn').onclick=()=>{ sClick(); show('home'); renderStages(); };
+$('#retryBtn').onclick=()=>{ sClick(); startGame(G.idx); };
+$('#howBtn').onclick=()=>{ sClick(); $('#howModal').classList.add('active'); };
+$('#howClose').onclick=()=>{ sClick(); $('#howModal').classList.remove('active'); };
 $('#resetBtn').onclick=()=>{ if(confirm('確定要清除所有過關紀錄嗎？')){ save={stages:{},soundOn,mode:curMode}; persist(); renderStages(); } };
 
 // 切換玩法：乘法 / 加減法
@@ -762,7 +780,7 @@ function setMode(m){
   document.querySelectorAll('.mtab').forEach(t=>t.classList.toggle('active', t.dataset.mode===m));
   renderStages();
 }
-document.querySelectorAll('.mtab').forEach(t=>{ t.onclick=()=>{ if(soundOn) sTick(); setMode(t.dataset.mode); }; });
+document.querySelectorAll('.mtab').forEach(t=>{ t.onclick=()=>{ sClick(); setMode(t.dataset.mode); }; });
 
 setSoundIcon();
 setMascot($('#homeMascot'),'idle');
