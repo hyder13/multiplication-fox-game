@@ -1,4 +1,4 @@
-const CACHE_NAME = 'multiplication-fox-game-v6';
+const CACHE_NAME = 'multiplication-fox-game-v7';
 const ASSETS = [
   './',
   './index.html',
@@ -6,6 +6,7 @@ const ASSETS = [
   './favicon.png',
   './icon-192.png',
   './icon-512.png',
+  './homepage-fox.png',
   './game_bg_forest.png',
   './chapter-mult.webp',
   './chapter-addsub.webp',

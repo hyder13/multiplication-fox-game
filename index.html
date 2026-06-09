@@ -65,6 +65,29 @@
   }
   .mascot{font-size:64px;text-align:center;line-height:1;margin:6px 0;filter:drop-shadow(0 8px 10px rgba(54,32,12,.3));animation:bob 2.2s ease-in-out infinite;}
   @keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-10px) rotate(3deg);}}
+  .title #homeMascot{
+    position:relative;width:min(228px,54vw);height:212px;margin:0 auto -2px;display:grid;place-items:end center;
+    font-size:0;line-height:1;filter:none;animation:homeGuide 3.4s ease-in-out infinite;isolation:isolate;
+  }
+  .title #homeMascot::before{
+    content:"";position:absolute;left:50%;bottom:7px;width:74%;height:30px;transform:translateX(-50%);
+    border-radius:50%;background:radial-gradient(ellipse,rgba(38,50,22,.38),rgba(38,50,22,.15) 48%,transparent 72%);
+    filter:blur(1px);z-index:0;
+  }
+  .title #homeMascot::after{
+    content:"";position:absolute;left:50%;bottom:0;width:88%;height:34px;transform:translateX(-50%);
+    border-radius:50% 50% 12px 12px;
+    background:
+      radial-gradient(circle at 16% 82%,#fff0a4 0 5px,transparent 6px),
+      radial-gradient(circle at 76% 78%,#fff0a4 0 4px,transparent 5px),
+      linear-gradient(180deg,rgba(95,184,92,.78),#347a3e);
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.28),0 5px 0 rgba(71,43,20,.18);z-index:2;
+  }
+  .homeFox{
+    position:relative;z-index:1;width:100%;height:100%;object-fit:contain;object-position:center bottom;
+    filter:drop-shadow(0 13px 12px rgba(47,30,13,.26)) drop-shadow(0 2px 0 rgba(255,244,179,.32));
+  }
+  @keyframes homeGuide{0%,100%{transform:translateY(0) rotate(-1deg);}50%{transform:translateY(-5px) rotate(1deg);}}
 
   .panel{
     background:linear-gradient(180deg,rgba(255,251,226,.97),rgba(255,239,181,.96));
@@ -277,6 +300,7 @@
     .title h1{font-size:52px;}
     .title p{font-size:19px;}
     .mascot{font-size:86px;}
+    .title #homeMascot{width:268px;height:248px;margin-bottom:-4px;}
     .panel{border-radius:30px;padding:24px;}
     .modetabs{padding:8px;gap:10px;} .mtab{font-size:20px;padding:16px;min-height:108px;}
     .stages{gap:18px;grid-template-columns:1fr;padding-left:18px;padding-right:18px;}
@@ -321,7 +345,7 @@
       <button class="iconbtn" id="soundBtn" title="音效開關">音</button>
     </div>
     <div class="title">
-      <div class="mascot" id="homeMascot">🦊</div>
+      <div class="mascot" id="homeMascot"><img class="homeFox" src="homepage-fox.png" alt=""></div>
       <h1>九九乘法闖關王</h1>
       <p>3 分鐘衝 100 分，一關一關變高手！</p>
     </div>
@@ -621,6 +645,16 @@ function setMascot(el, state){
   img.className='mImg'; img.alt='';
   img.onerror=function(){ el.textContent=MEMOJI[state]||'🦊'; };
   img.src=MASCOT[state];
+  el.appendChild(img);
+}
+function setHomeMascot(){
+  const el=$('#homeMascot');
+  if(!el) return;
+  el.innerHTML='';
+  const img=new Image();
+  img.className='homeFox'; img.alt='';
+  img.onerror=function(){ setMascot(el,'idle'); };
+  img.src='homepage-fox.png';
   el.appendChild(img);
 }
 
@@ -1140,7 +1174,7 @@ function setMode(m){
 document.querySelectorAll('.mtab').forEach(t=>{ t.onclick=()=>{ sClick(); setMode(t.dataset.mode); }; });
 
 setSoundIcon();
-setMascot($('#homeMascot'),'idle');
+setHomeMascot();
 setMode(save.mode || 'mult');
 if('serviceWorker' in navigator && location.protocol !== 'file:'){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
