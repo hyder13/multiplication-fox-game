@@ -11,10 +11,17 @@
 - 進度自動存在瀏覽器，手機 / 平板 / 電腦都能玩。
 
 ## 線上遊玩
-發佈後網址會長這樣： `https://<帳號>.github.io/<repo>/`
+GitHub Pages：`https://hyder13.github.io/multiplication-fox-game/`
+
+## 安裝到手機 / 平板
+- iPhone / iPad：用 Safari 打開遊戲 → 分享 → 加入主畫面。
+- Android：用 Chrome 打開遊戲 → 選單 → 加到主畫面 / 安裝應用程式。
+- 安裝後可全螢幕開啟，並會快取主要圖片與音效，方便離線重複練習。
 
 ## 檔案
 - `index.html` — 遊戲主程式
+- `manifest.json` / `sw.js` — PWA 安裝與離線快取設定
+- `icon-*.png` / `favicon.png` — App 圖示
 - `fox_*.png` — 狐狸吉祥物表情圖
 - `*.wav` — 音效
 

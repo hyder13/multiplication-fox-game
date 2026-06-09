@@ -1,0 +1,26 @@
+{
+  "name": "九九乘法闖關王",
+  "short_name": "乘法闖關王",
+  "description": "適合小孩的九九乘法與加減法互動練習遊戲。",
+  "lang": "zh-Hant",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#57bce8",
+  "theme_color": "#f6755e",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
