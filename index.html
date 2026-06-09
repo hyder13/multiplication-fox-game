@@ -157,6 +157,11 @@
   .stat{display:flex;justify-content:space-around;margin-top:14px;}
   .stat div{font-size:14px;color:var(--muted);font-weight:700;}
   .stat div b{display:block;font-size:26px;color:var(--ink);}
+  .tip{
+    margin:16px auto 4px;padding:10px 12px;max-width:360px;border-radius:16px;
+    background:rgba(255,255,255,.55);border:2px dashed rgba(118,69,31,.3);
+    color:#5a381b;font-size:15px;font-weight:900;line-height:1.45;
+  }
   canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:50;}
 
   /* ---------- modal ---------- */
@@ -276,6 +281,7 @@
           <div>答對<b id="resCorrect">0</b></div>
           <div>最佳連續<b id="resCombo">0</b></div>
         </div>
+        <div class="tip" id="resTip">下一局會自動多練需要加強的題目。</div>
         <div class="row">
           <button class="btn big" id="nextBtn">下一關 ▶</button>
           <button class="btn ghost" id="retryBtn">再玩一次 🔁</button>
@@ -344,8 +350,13 @@ let STAGES = STAGE_SETS[curMode];
 const SAVE_KEY = 'mult99_save_v1';
 let save = loadSave();
 function loadSave(){
-  try{ return JSON.parse(localStorage.getItem(SAVE_KEY)) || {stages:{}}; }
-  catch(e){ return {stages:{}}; }
+  try{ return normalizeSave(JSON.parse(localStorage.getItem(SAVE_KEY)) || {}); }
+  catch(e){ return normalizeSave({}); }
+}
+function normalizeSave(data){
+  data.stages = data.stages || {};
+  data.facts = data.facts || {};
+  return data;
 }
 function persist(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} }
 function stageRecord(id){ return save.stages[id] || {stars:0, best:0, cleared:false}; }
@@ -531,9 +542,69 @@ function stageIcon(stage){
 function rnd(a,b){ return a+Math.floor(Math.random()*(b-a+1)); }
 function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
 
+function factRecord(key){
+  save.facts = save.facts || {};
+  return save.facts[key] || {seen:0, right:0, wrong:0, slow:0, lastMs:0};
+}
+function factWeight(key){
+  const r=factRecord(key);
+  if(!r.seen) return 1.3;
+  const accuracy = r.right / Math.max(1,r.seen);
+  const needsPractice = r.wrong*2 + r.slow + (accuracy<0.75 ? 2 : 0);
+  return Math.min(7, 1 + needsPractice);
+}
+function weightedPick(items){
+  const total=items.reduce((sum,item)=>sum+item.weight,0);
+  let pick=Math.random()*total;
+  for(const item of items){ pick-=item.weight; if(pick<=0) return item.value; }
+  return items[items.length-1].value;
+}
+function pickSmart(candidates){
+  if(!candidates.length) return null;
+  // 保留一點隨機新鮮感，避免孩子覺得一直被同一題追著跑。
+  if(Math.random()<0.28) return candidates[rnd(0,candidates.length-1)];
+  return weightedPick(candidates.map(q=>({value:q,weight:factWeight(q.key)})));
+}
+function multCandidates(stage){
+  const out=[];
+  if(stage.type==='table'){
+    for(let b=1;b<=9;b++) out.push({kind:'mul',a:stage.n,b,ans:stage.n*b,key:`mul:${Math.min(stage.n,b)}x${Math.max(stage.n,b)}`});
+  } else {
+    for(let a=2;a<=9;a++) for(let b=2;b<=9;b++) out.push({kind:'mul',a,b,ans:a*b,key:`mul:${Math.min(a,b)}x${Math.max(a,b)}`});
+  }
+  return out;
+}
+function addSubCandidates(kind, stage){
+  const out=[];
+  if(kind==='add'){
+    const maxA=9, maxB=9;
+    for(let a=1;a<=maxA;a++) for(let b=1;b<=maxB;b++){
+      if(stage.maxSum && a+b>stage.maxSum) continue;
+      out.push({kind:'add',a,b,op:'+',ans:a+b,key:`add:${Math.min(a,b)}+${Math.max(a,b)}`});
+    }
+  } else {
+    for(let a=1;a<=9;a++) for(let b=0;b<=a;b++){
+      out.push({kind:'sub',a,b,op:'−',ans:a-b,key:`sub:${a}-${b}`});
+    }
+  }
+  return out;
+}
+function numberOptions(ans, deltas){
+  const opts=new Set([ans]);
+  let guard=0;
+  while(opts.size<4 && guard++<80){
+    let cand=ans+deltas[rnd(0,deltas.length-1)];
+    if(cand<0) cand=ans+rnd(1,5);
+    if(cand===ans) cand=ans+rnd(1,4);
+    opts.add(cand);
+  }
+  return shuffle([...opts].map(String));
+}
+
 function makeQuestion(stage){
   if(stage.type==='reverse'){
-    const a=rnd(2,9), b=rnd(2,9), prod=a*b;
+    const base=pickSmart(multCandidates({type:'mixed'}));
+    const a=base.a, b=base.b, prod=base.ans;
     // 正確算式 + 3 個乘積不同的干擾算式
     const correct = `${a}×${b}`;
     const opts=new Set([correct]);
@@ -542,42 +613,20 @@ function makeQuestion(stage){
       const x=rnd(2,9), y=rnd(2,9);
       if(x*y!==prod) opts.add(`${x}×${y}`);
     }
-    return { text:`${prod}`, sub:'哪一個算式答案是這個數字？', options:shuffle([...opts]), answer:correct };
+    return { text:`${prod}`, sub:'哪一個算式答案是這個數字？', options:shuffle([...opts]), answer:correct, key:base.key, review:`${a} × ${b}` };
   }
   if(stage.type==='add' || stage.type==='sub' || stage.type==='addsub'){
     let kind=stage.type;
     if(kind==='addsub') kind = Math.random()<0.5 ? 'add' : 'sub';
-    let a,b,ans,op;
-    if(kind==='add'){
-      if(stage.maxSum){ a=rnd(1,stage.maxSum-1); b=rnd(1,stage.maxSum-a); }
-      else { a=rnd(1,9); b=rnd(1,9); }
-      ans=a+b; op='+';
-    } else { // sub：不會是負數
-      a=rnd(1,9); b=rnd(1,9); if(b>a){ const t=a; a=b; b=t; } ans=a-b; op='−';
-    }
-    const opts=new Set([ans]);
-    let guard=0;
-    while(opts.size<4 && guard++<60){
-      const deltas=[1,-1,2,-2,3,-3,b,-b];
-      let cand=ans+deltas[rnd(0,deltas.length-1)];
-      if(cand<0) cand=ans+rnd(1,5);
-      opts.add(cand);
-    }
-    return { text:`${a} ${op} ${b}`, sub:'= ?', options:shuffle([...opts].map(String)), answer:String(ans) };
+    const q=pickSmart(addSubCandidates(kind, stage));
+    const deltas=[1,-1,2,-2,3,-3,q.b,-q.b].filter(n=>n!==0);
+    return { text:`${q.a} ${q.op} ${q.b}`, sub:'= ?', options:numberOptions(q.ans,deltas), answer:String(q.ans), key:q.key, review:`${q.a} ${q.op} ${q.b}` };
   }
-  let a,b;
-  if(stage.type==='table'){ a=stage.n; b=rnd(1,9); if(Math.random()<0.5){ [a,b]=[b,a]; } }
-  else { a=rnd(2,9); b=rnd(2,9); }
-  const ans=a*b;
-  const opts=new Set([ans]);
-  let guard=0;
-  while(opts.size<4 && guard++<60){
-    const deltas=[a,-a,b,-b,1,-1,2,-2,a+1,-(b+1)];
-    let cand=ans+deltas[rnd(0,deltas.length-1)];
-    if(cand<=0) cand=ans+rnd(1,9);
-    opts.add(cand);
-  }
-  return { text:`${a} × ${b}`, sub:'= ?', options:shuffle([...opts].map(String)), answer:String(ans) };
+  const q=pickSmart(multCandidates(stage));
+  let a=q.a, b=q.b;
+  if(stage.type==='table' && Math.random()<0.5){ const t=a; a=b; b=t; }
+  const deltas=[a,-a,b,-b,1,-1,2,-2,a+1,-(b+1)];
+  return { text:`${a} × ${b}`, sub:'= ?', options:numberOptions(q.ans,deltas), answer:String(q.ans), key:q.key, review:`${a} × ${b}` };
 }
 
 /* ===================== 遊戲狀態 ===================== */
@@ -586,7 +635,7 @@ let G=null, timerId=null;
 function startGame(idx){
   const stage=STAGES[idx];
   G={ idx, stage, score:0, correct:0, total:0, combo:0, maxCombo:0,
-      timeLeft:ROUND_SEC, qStart:0, locked:false, cleared:false };
+      timeLeft:ROUND_SEC, qStart:0, locked:false, cleared:false, review:{} };
   $('#gameTitle').textContent=`第 ${idx+1} 關・${stage.name}`;
   updateHud();
   show('game');
@@ -643,6 +692,7 @@ function answer(btn, choice){
   G.total++;
   const correct = choice===G.q.answer;
   const elapsed = performance.now()-G.qStart;
+  recordFact(G.q, correct, elapsed);
   document.querySelectorAll('.opt').forEach(o=>o.classList.add('disabled'));
   if(correct){
     const fast = elapsed<FAST_MS;
@@ -665,6 +715,35 @@ function answer(btn, choice){
   updateHud();
   if(G.score>=GOAL){ G.cleared=true; setTimeout(()=>{ clearInterval(timerId); endGame(true); },600); return; }
   setTimeout(nextQuestion, correct?550:1000);
+}
+
+function recordFact(q, correct, elapsed){
+  if(!q || !q.key) return;
+  const r=factRecord(q.key);
+  r.seen++; r.lastMs=Math.round(elapsed);
+  if(correct) r.right++; else r.wrong++;
+  if(elapsed>FAST_MS) r.slow++;
+  save.facts[q.key]=r;
+
+  const item=G.review[q.key] || {label:q.review || q.text, wrong:0, slow:0, seen:0};
+  item.seen++;
+  if(!correct) item.wrong++;
+  else if(elapsed>FAST_MS) item.slow++;
+  G.review[q.key]=item;
+  persist();
+}
+
+function resultTip(){
+  const items=Object.values(G.review || {});
+  const needs=items
+    .filter(item=>item.wrong || item.slow)
+    .sort((a,b)=>(b.wrong*3+b.slow)-(a.wrong*3+a.slow));
+  if(needs.length){
+    const top=needs.slice(0,2).map(item=>item.label).join('、');
+    return `下一局會多練：${top}`;
+  }
+  if(G.total && G.correct===G.total) return '這局很穩，下一關可以加快速度挑戰三星。';
+  return '下一局會自動多練答得比較慢的題目。';
 }
 
 function floatText(btn, txt, color){
@@ -698,6 +777,7 @@ function endGame(cleared){
   $('#resScore').textContent=G.score;
   $('#resCorrect').textContent=G.correct;
   $('#resCombo').textContent=G.maxCombo;
+  $('#resTip').textContent=resultTip();
   const last = G.idx>=STAGES.length-1;
   if(cleared){
     setMascot($('#resMascot'),'celebrate');
@@ -771,7 +851,7 @@ $('#homeBtn').onclick=()=>{ sClick(); show('home'); renderStages(); };
 $('#retryBtn').onclick=()=>{ sClick(); startGame(G.idx); };
 $('#howBtn').onclick=()=>{ sClick(); $('#howModal').classList.add('active'); };
 $('#howClose').onclick=()=>{ sClick(); $('#howModal').classList.remove('active'); };
-$('#resetBtn').onclick=()=>{ if(confirm('確定要清除所有過關紀錄嗎？')){ save={stages:{},soundOn,mode:curMode}; persist(); renderStages(); } };
+$('#resetBtn').onclick=()=>{ if(confirm('確定要清除所有過關紀錄嗎？')){ save={stages:{},facts:{},soundOn,mode:curMode}; persist(); renderStages(); } };
 
 // 切換玩法：乘法 / 加減法
 function setMode(m){
