@@ -937,7 +937,7 @@ function answer(btn, choice){
     btn.classList.add('wrong');
     setMascot($('#qMascot'),'wrong');
     $('#qMascot').classList.remove('happy','sad'); void $('#qMascot').offsetWidth; $('#qMascot').classList.add('sad');
-    floatText(btn,'再試試 💪','#ff6b6b');
+    floatText(btn,'再試試','#ff6b6b');
     sBad();
     if(navigator.vibrate) navigator.vibrate(120);
     // 標出正確答案
