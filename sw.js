@@ -1,4 +1,4 @@
-const CACHE_NAME = 'multiplication-fox-game-v2';
+const CACHE_NAME = 'multiplication-fox-game-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -7,6 +7,9 @@ const ASSETS = [
   './icon-192.png',
   './icon-512.png',
   './game_bg_forest.png',
+  './chapter-mult.png',
+  './chapter-addsub.png',
+  './chapter-div.png',
   './fox_idle.png',
   './fox_correct.png',
   './fox_excited.png',

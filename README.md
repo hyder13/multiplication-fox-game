@@ -23,6 +23,7 @@ GitHub Pages：`https://hyder13.github.io/multiplication-fox-game/`
 - `index.html` — 遊戲主程式
 - `manifest.json` / `sw.js` — PWA 安裝與離線快取設定
 - `icon-*.png` / `favicon.png` — App 圖示
+- `chapter-*.png` / `game_bg_forest.png` — 遊戲章節與背景圖
 - `fox_*.png` — 狐狸吉祥物表情圖
 - `*.wav` — 音效
 
