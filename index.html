@@ -71,8 +71,8 @@
     border:4px solid #8c5a2d;border-radius:22px;padding:16px;
     box-shadow:0 9px 0 #603715,0 20px 34px rgba(47,32,15,.34),inset 0 0 0 3px rgba(255,255,255,.45);
   }
-  .modetabs{display:flex;gap:8px;background:rgba(113,68,32,.16);border-radius:17px;padding:6px;margin-bottom:14px;border:2px solid rgba(93,55,23,.12);}
-  .mtab{flex:1;border:none;border-radius:13px;padding:13px 8px;font-size:16px;font-weight:900;cursor:pointer;background:transparent;color:#7c5d42;transition:background .15s,color .15s,transform .08s;}
+  .modetabs{display:flex;flex-wrap:wrap;gap:8px;background:rgba(113,68,32,.16);border-radius:17px;padding:6px;margin-bottom:14px;border:2px solid rgba(93,55,23,.12);}
+  .mtab{flex:1 1 30%;min-width:0;border:none;border-radius:13px;padding:13px 8px;font-size:15px;font-weight:900;cursor:pointer;background:transparent;color:#7c5d42;transition:background .15s,color .15s,transform .08s;}
   .mtab.active{background:linear-gradient(180deg,#fff,#ffe690);color:#4d2b13;box-shadow:0 4px 0 #d49b35,0 8px 14px rgba(86,52,22,.16);}
   .mtab:active{transform:scale(.97);}
   .stages{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px;}
@@ -251,6 +251,7 @@
       <div class="modetabs">
         <button class="mtab active" data-mode="mult">✖️ 九九乘法</button>
         <button class="mtab" data-mode="addsub">➕➖ 加減法</button>
+        <button class="mtab" data-mode="div">➗ 除法</button>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <strong style="font-size:17px;">選擇關卡</strong>
@@ -369,6 +370,13 @@ const STAGE_SETS = {
     {id:'s1', type:'sub', name:'減法練習'},
     {id:'m1', type:'addsub', name:'加減混合'},
     {id:'m2', type:'addsub', name:'心算高手', special:true},
+  ],
+  div: [
+    {id:'d1', type:'division', divisors:[2,3,4,5], maxQ:5, name:'除法入門'},
+    {id:'d2', type:'division', divisors:[2,3,4,5], name:'除以 2-5'},
+    {id:'d3', type:'division', divisors:[6,7,8,9], name:'除以 6-9'},
+    {id:'d4', type:'division', divisors:[2,3,4,5,6,7,8,9], name:'綜合除法', special:true},
+    {id:'d5', type:'remainder', divisors:[2,3,4,5,6,7,8,9], name:'有餘數挑戰', special:true},
   ],
 };
 let curMode = 'mult';
@@ -563,6 +571,8 @@ function stageIcon(stage){
   if(stage.type==='add') return '+';
   if(stage.type==='sub') return '−';
   if(stage.type==='addsub') return '±';
+  if(stage.type==='division') return '÷';
+  if(stage.type==='remainder') return 'R';
   return stage.n || '×';
 }
 
@@ -620,6 +630,30 @@ function addSubCandidates(kind, stage){
   }
   return out;
 }
+function divisionCandidates(stage){
+  const out=[];
+  const divisors=stage.divisors || [2,3,4,5,6,7,8,9];
+  const maxQ=stage.maxQ || 9;
+  divisors.forEach(b=>{
+    for(let q=1;q<=maxQ;q++){
+      out.push({kind:'div',a:b*q,b,ans:q,key:`div:${b*q}/${b}`});
+    }
+  });
+  return out;
+}
+function remainderCandidates(stage){
+  const out=[];
+  const divisors=stage.divisors || [2,3,4,5,6,7,8,9];
+  divisors.forEach(b=>{
+    for(let q=1;q<=9;q++){
+      for(let r=1;r<b;r++){
+        const a=b*q+r;
+        if(a<=81) out.push({kind:'rem',a,b,quotient:q,remainder:r,ans:`${q} 餘 ${r}`,key:`rem:${a}/${b}`});
+      }
+    }
+  });
+  return out;
+}
 function numberOptions(ans, deltas){
   const opts=new Set([ans]);
   let guard=0;
@@ -636,10 +670,14 @@ function allPracticeCandidates(){
     ...multCandidates({type:'mixed'}),
     ...addSubCandidates('add',{}),
     ...addSubCandidates('sub',{}),
+    ...divisionCandidates({}),
+    ...remainderCandidates({}),
   ];
 }
 function candidateLabel(q){
   if(q.kind==='mul') return `${q.a} × ${q.b}`;
+  if(q.kind==='div') return `${q.a} ÷ ${q.b}`;
+  if(q.kind==='rem') return `${q.a} ÷ ${q.b}`;
   return `${q.a} ${q.op} ${q.b}`;
 }
 function weaknessScore(key){
@@ -662,6 +700,24 @@ function questionFromCandidate(q){
   if(q.kind==='mul'){
     const deltas=[q.a,-q.a,q.b,-q.b,1,-1,2,-2,q.a+1,-(q.b+1)];
     return { text:`${q.a} × ${q.b}`, sub:'= ?', options:numberOptions(q.ans,deltas), answer:String(q.ans), key:q.key, review:candidateLabel(q) };
+  }
+  if(q.kind==='div'){
+    const deltas=[1,-1,2,-2,q.b,-q.b];
+    return { text:`${q.a} ÷ ${q.b}`, sub:'= ?', options:numberOptions(q.ans,deltas), answer:String(q.ans), key:q.key, review:candidateLabel(q) };
+  }
+  if(q.kind==='rem'){
+    const opts=new Set([q.ans]);
+    let guard=0;
+    while(opts.size<4 && guard++<80){
+      const dq=[-1,0,1,2][rnd(0,3)];
+      const dr=[-1,1,2,-2][rnd(0,3)];
+      let qq=Math.max(0,q.quotient+dq);
+      let rr=q.remainder+dr;
+      if(rr<0) rr=0;
+      if(rr>=q.b) rr=q.b-1;
+      opts.add(`${qq} 餘 ${rr}`);
+    }
+    return { text:`${q.a} ÷ ${q.b}`, sub:'= ? 餘 ?', options:shuffle([...opts]), answer:q.ans, key:q.key, review:candidateLabel(q) };
   }
   const deltas=[1,-1,2,-2,3,-3,q.b,-q.b].filter(n=>n!==0);
   return { text:`${q.a} ${q.op} ${q.b}`, sub:'= ?', options:numberOptions(q.ans,deltas), answer:String(q.ans), key:q.key, review:candidateLabel(q) };
@@ -693,6 +749,8 @@ function makeQuestion(stage){
     const deltas=[1,-1,2,-2,3,-3,q.b,-q.b].filter(n=>n!==0);
     return { text:`${q.a} ${q.op} ${q.b}`, sub:'= ?', options:numberOptions(q.ans,deltas), answer:String(q.ans), key:q.key, review:`${q.a} ${q.op} ${q.b}` };
   }
+  if(stage.type==='division') return questionFromCandidate(pickSmart(divisionCandidates(stage)));
+  if(stage.type==='remainder') return questionFromCandidate(pickSmart(remainderCandidates(stage)));
   const q=pickSmart(multCandidates(stage));
   let a=q.a, b=q.b;
   if(stage.type==='table' && Math.random()<0.5){ const t=a; a=b; b=t; }
@@ -848,6 +906,15 @@ function renderProgress(){
     const m=masteryFor(keys);
     rows.push(`<div class="progress-row"><span>${n} 的乘法</span><div class="meter"><span style="width:${m.pct}%"></span></div><span>${m.label}</span></div>`);
   }
+  const divRows=[
+    {label:'除以 2-5', stage:{type:'division',divisors:[2,3,4,5]}},
+    {label:'除以 6-9', stage:{type:'division',divisors:[6,7,8,9]}},
+    {label:'有餘數', stage:{type:'remainder',divisors:[2,3,4,5,6,7,8,9]}},
+  ].map(group=>{
+    const keys=(group.stage.type==='remainder'?remainderCandidates(group.stage):divisionCandidates(group.stage)).map(q=>q.key);
+    const m=masteryFor(keys);
+    return `<div class="progress-row"><span>${group.label}</span><div class="meter"><span style="width:${m.pct}%"></span></div><span>${m.label}</span></div>`;
+  });
   const weak=weakCandidates().slice(0,8);
   const weakHtml=weak.length
     ? `<div class="weak-list">${weak.map(item=>{
@@ -856,6 +923,7 @@ function renderProgress(){
       }).join('')}</div>`
     : `<div class="empty-note">目前沒有明顯錯題或慢題。多玩幾局後，這裡會顯示需要加強的題目。</div>`;
   body.innerHTML=`<strong>九九乘法熟練度</strong><div class="progress-grid">${rows.join('')}</div>
+    <div style="height:14px"></div><strong>除法熟練度</strong><div class="progress-grid">${divRows.join('')}</div>
     <div style="height:14px"></div><strong>需要加強</strong>${weakHtml}`;
 }
 
