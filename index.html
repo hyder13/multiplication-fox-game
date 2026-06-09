@@ -118,8 +118,10 @@
   .modal h2{margin:0 0 10px;}
   .modal ul{padding-left:20px;line-height:1.7;font-size:15px;}
   .countdown{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:55;}
-  .countdown.active{display:flex;}
-  .cd-num{font-size:140px;font-weight:900;color:#fff;text-shadow:0 6px 0 rgba(0,0,0,.2);animation:cd .9s ease;}
+  .countdown.active{display:flex;background:rgba(22,13,46,.6);}
+  .cd-num{font-size:150px;font-weight:900;color:#ffd93c;
+    -webkit-text-stroke:5px #3a2270;paint-order:stroke fill;
+    text-shadow:0 6px 0 rgba(0,0,0,.45),0 0 26px rgba(0,0,0,.5);animation:cd .9s ease;}
   @keyframes cd{0%{opacity:0;transform:scale(2.2);}30%{opacity:1;transform:scale(1);}100%{opacity:0;transform:scale(.6);}}
   .footnote{text-align:center;color:rgba(255,255,255,.85);font-size:12px;margin-top:14px;}
 
