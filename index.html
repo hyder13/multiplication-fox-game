@@ -96,17 +96,17 @@
   }
   .modetabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:rgba(113,68,32,.16);border-radius:17px;padding:6px;margin-bottom:14px;border:2px solid rgba(93,55,23,.12);}
   .mtab{
-    position:relative;min-width:0;border:3px solid rgba(91,52,22,.42);border-radius:16px;padding:10px 6px 9px;
-    min-height:86px;font-size:15px;font-weight:900;cursor:pointer;color:#fff;
+    position:relative;min-width:0;border:3px solid rgba(91,52,22,.42);border-radius:16px;padding:12px 6px 10px;
+    min-height:96px;font-size:17px;font-weight:900;cursor:pointer;color:#fff;
     background:linear-gradient(180deg,rgba(38,96,48,.2),rgba(25,66,36,.72)),url("chapter-mult.webp") center/cover;
     box-shadow:0 5px 0 rgba(69,42,18,.42),inset 0 0 0 2px rgba(255,255,255,.16);
     overflow:hidden;transition:transform .08s,box-shadow .08s,filter .15s;
   }
   .mtab::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(37,22,8,.58));}
   .mtab > span{position:relative;z-index:1;}
-  .mtab .chapter-icon{display:block;font-size:24px;line-height:1;margin-bottom:2px;text-shadow:0 2px 0 rgba(60,31,12,.35);}
-  .mtab .chapter-name{display:block;font-size:15px;line-height:1.1;text-shadow:0 2px 0 rgba(60,31,12,.35);}
-  .mtab .chapter-place{display:block;margin-top:3px;font-size:11px;line-height:1.1;color:rgba(255,255,255,.86);}
+  .mtab .chapter-icon{display:block;font-size:28px;line-height:1;margin-bottom:3px;text-shadow:0 2px 0 rgba(60,31,12,.35);}
+  .mtab .chapter-name{display:block;font-size:17px;line-height:1.1;text-shadow:0 2px 0 rgba(60,31,12,.35);}
+  .mtab .chapter-place{display:block;margin-top:4px;font-size:13px;line-height:1.1;color:rgba(255,255,255,.88);}
   .mtab[data-mode="addsub"]{background:linear-gradient(180deg,rgba(214,109,54,.1),rgba(111,50,22,.72)),url("chapter-addsub.webp") center/cover;}
   .mtab[data-mode="div"]{background:linear-gradient(180deg,rgba(61,111,191,.08),rgba(20,54,101,.72)),url("chapter-div.webp") center/cover;}
   .mtab.active{filter:saturate(1.12) brightness(1.08);box-shadow:0 5px 0 #d49b35,0 0 0 3px #fff1a3,inset 0 0 0 2px rgba(255,255,255,.24);}
@@ -302,7 +302,10 @@
     .mascot{font-size:86px;}
     .title #homeMascot{width:268px;height:248px;margin-bottom:-4px;}
     .panel{border-radius:30px;padding:24px;}
-    .modetabs{padding:8px;gap:10px;} .mtab{font-size:20px;padding:16px;min-height:108px;}
+    .modetabs{padding:8px;gap:10px;} .mtab{font-size:20px;padding:17px 12px 16px;min-height:122px;}
+    .mtab .chapter-icon{font-size:34px;margin-bottom:4px;}
+    .mtab .chapter-name{font-size:21px;}
+    .mtab .chapter-place{font-size:15px;}
     .stages{gap:18px;grid-template-columns:1fr;padding-left:18px;padding-right:18px;}
     .stage{width:68%;}
     .stage{border-radius:22px;padding:18px 16px;}
