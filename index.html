@@ -281,7 +281,7 @@
   /* ---------- modal ---------- */
   .modal{position:fixed;inset:0;background:rgba(20,10,40,.55);display:none;align-items:center;justify-content:center;z-index:60;padding:20px;}
   .modal.active{display:flex;}
-  .modal .box{background:#fff;border-radius:22px;padding:22px;max-width:420px;box-shadow:0 14px 40px rgba(0,0,0,.4);}
+  .modal .box{background:#fff;border-radius:22px;padding:22px;max-width:420px;width:100%;max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px);overflow-y:auto;-webkit-overflow-scrolling:touch;box-shadow:0 14px 40px rgba(0,0,0,.4);}
   .modal h2{margin:0 0 10px;}
   .modal ul{padding-left:20px;line-height:1.7;font-size:15px;}
   .countdown{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:55;}
