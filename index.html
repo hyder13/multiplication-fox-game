@@ -723,6 +723,44 @@ function pickSmart(candidates){
   if(Math.random()<0.28) return candidates[rnd(0,candidates.length-1)];
   return weightedPick(candidates.map(q=>({value:q,weight:factWeight(q.key)})));
 }
+// 把每一題分成 0=簡單 / 1=中等 / 2=較難，用來讓相鄰題目的難度有變化。
+function candidateDifficulty(q){
+  const big=n=>n>=6;                       // 6~9 視為較難
+  const easy=n=>n===1||n===2||n===5||n===10;
+  if(q.kind==='mul'){
+    if(easy(q.a)||easy(q.b)) return 0;
+    if(big(q.a)&&big(q.b)) return 2;
+    return 1;
+  }
+  if(q.kind==='add')  return q.ans<=10 ? 0 : (q.ans>=15 ? 2 : 1);
+  if(q.kind==='sub')  return q.a<=5 ? 0 : (q.a>=9 ? 2 : 1);
+  if(q.kind==='div')  return easy(q.b) ? 0 : (big(q.b) ? 2 : 1);
+  if(q.kind==='rem')  return 2;
+  return 1;
+}
+// 在 pickSmart 的適性加權之上，再加兩個規則：
+//  1) 同一局內不重複出題（題庫夠大時）
+//  2) 盡量讓相鄰兩題的難度不同
+function pickNext(pool){
+  if(!pool || !pool.length) return null;
+  const recent = (G && G.recentKeys) ? G.recentKeys : [];
+  let fresh = pool.filter(q=>!recent.includes(q.key));
+  if(!fresh.length) fresh = pool;          // 題庫比視窗小時才允許重複
+  const lastBand = G ? G.lastBand : null;
+  if(lastBand!=null){
+    const varied = fresh.filter(q=>candidateDifficulty(q)!==lastBand);
+    if(varied.length) fresh = varied;
+  }
+  const chosen = pickSmart(fresh);
+  if(G && chosen){
+    G.lastBand = candidateDifficulty(chosen);
+    G.recentKeys = recent;
+    G.recentKeys.push(chosen.key);
+    const cap = Math.max(1, Math.min(pool.length-1, 30));
+    while(G.recentKeys.length>cap) G.recentKeys.shift();
+  }
+  return chosen;
+}
 function multCandidates(stage){
   const out=[];
   if(stage.type==='table'){
@@ -844,10 +882,10 @@ function makeQuestion(stage){
   if(stage.type==='review'){
     const weak=weakCandidates();
     const pool=weak.length ? weak.slice(0,12).map(item=>item.q) : allPracticeCandidates();
-    return questionFromCandidate(pickSmart(pool));
+    return questionFromCandidate(pickNext(pool));
   }
   if(stage.type==='reverse'){
-    const base=pickSmart(multCandidates({type:'mixed'}));
+    const base=pickNext(multCandidates({type:'mixed'}));
     const a=base.a, b=base.b, prod=base.ans;
     // 正確算式 + 3 個乘積不同的干擾算式
     const correct = `${a}×${b}`;
@@ -862,13 +900,13 @@ function makeQuestion(stage){
   if(stage.type==='add' || stage.type==='sub' || stage.type==='addsub'){
     let kind=stage.type;
     if(kind==='addsub') kind = Math.random()<0.5 ? 'add' : 'sub';
-    const q=pickSmart(addSubCandidates(kind, stage));
+    const q=pickNext(addSubCandidates(kind, stage));
     const deltas=[1,-1,2,-2,3,-3,q.b,-q.b].filter(n=>n!==0);
     return { text:`${q.a} ${q.op} ${q.b}`, sub:'= ?', options:numberOptions(q.ans,deltas), answer:String(q.ans), key:q.key, review:`${q.a} ${q.op} ${q.b}` };
   }
-  if(stage.type==='division') return questionFromCandidate(pickSmart(divisionCandidates(stage)));
-  if(stage.type==='remainder') return questionFromCandidate(pickSmart(remainderCandidates(stage)));
-  const q=pickSmart(multCandidates(stage));
+  if(stage.type==='division') return questionFromCandidate(pickNext(divisionCandidates(stage)));
+  if(stage.type==='remainder') return questionFromCandidate(pickNext(remainderCandidates(stage)));
+  const q=pickNext(multCandidates(stage));
   let a=q.a, b=q.b;
   if(stage.type==='table' && Math.random()<0.5){ const t=a; a=b; b=t; }
   const qq=questionFromCandidate({...q,a,b});
@@ -881,7 +919,8 @@ let G=null, timerId=null;
 function startGame(idx){
   const stage=STAGES[idx];
   G={ idx, stage, score:0, correct:0, total:0, combo:0, maxCombo:0,
-      timeLeft:ROUND_SEC, qStart:0, locked:false, cleared:false, review:{} };
+      timeLeft:ROUND_SEC, qStart:0, locked:false, cleared:false, review:{},
+      recentKeys:[], lastBand:null };
   $('#gameTitle').textContent=`第 ${idx+1} 關・${stage.name}`;
   updateHud();
   show('game');
@@ -895,7 +934,8 @@ function startReviewGame(){
     return;
   }
   G={ idx:-1, stage:{id:'review',type:'review',name:'錯題複習'}, score:0, correct:0, total:0, combo:0, maxCombo:0,
-      timeLeft:ROUND_SEC, qStart:0, locked:false, cleared:false, review:{} };
+      timeLeft:ROUND_SEC, qStart:0, locked:false, cleared:false, review:{},
+      recentKeys:[], lastBand:null };
   $('#gameTitle').textContent='錯題複習';
   updateHud();
   show('game');
