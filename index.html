@@ -779,7 +779,7 @@ function addSubCandidates(kind, stage){
       out.push({kind:'add',a,b,op:'+',ans:a+b,key:`add:${Math.min(a,b)}+${Math.max(a,b)}`});
     }
   } else {
-    for(let a=1;a<=9;a++) for(let b=0;b<=a;b++){
+    for(let a=1;a<=9;a++) for(let b=1;b<=a;b++){
       out.push({kind:'sub',a,b,op:'−',ans:a-b,key:`sub:${a}-${b}`});
     }
   }
