@@ -94,7 +94,7 @@
     border:4px solid #8c5a2d;border-radius:22px;padding:16px;
     box-shadow:0 9px 0 #603715,0 20px 34px rgba(47,32,15,.34),inset 0 0 0 3px rgba(255,255,255,.45);
   }
-  .modetabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:rgba(113,68,32,.16);border-radius:17px;padding:6px;margin-bottom:14px;border:2px solid rgba(93,55,23,.12);}
+  .modetabs{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;background:rgba(113,68,32,.16);border-radius:17px;padding:6px;margin-bottom:14px;border:2px solid rgba(93,55,23,.12);}
   .mtab{
     position:relative;min-width:0;border:3px solid rgba(91,52,22,.42);border-radius:16px;padding:12px 6px 10px;
     min-height:96px;font-size:17px;font-weight:900;cursor:pointer;color:#fff;
@@ -109,6 +109,7 @@
   .mtab .chapter-place{display:block;margin-top:4px;font-size:13px;line-height:1.1;color:rgba(255,255,255,.88);}
   .mtab[data-mode="addsub"]{background:linear-gradient(180deg,rgba(214,109,54,.1),rgba(111,50,22,.72)),url("chapter-addsub.webp") center/cover;}
   .mtab[data-mode="div"]{background:linear-gradient(180deg,rgba(61,111,191,.08),rgba(20,54,101,.72)),url("chapter-div.webp") center/cover;}
+  .mtab[data-mode="all"]{background:linear-gradient(150deg,rgba(150,86,176,.86),rgba(72,44,120,.92));}
   .mtab.active{filter:saturate(1.12) brightness(1.08);box-shadow:0 5px 0 #d49b35,0 0 0 3px #fff1a3,inset 0 0 0 2px rgba(255,255,255,.24);}
   .mtab:active{transform:scale(.97);}
   .stages{
@@ -302,7 +303,7 @@
     .mascot{font-size:86px;}
     .title #homeMascot{width:268px;height:248px;margin-bottom:-4px;}
     .panel{border-radius:30px;padding:24px;}
-    .modetabs{padding:8px;gap:10px;} .mtab{font-size:20px;padding:17px 12px 16px;min-height:122px;}
+    .modetabs{padding:8px;gap:10px;grid-template-columns:repeat(4,1fr);} .mtab{font-size:20px;padding:17px 12px 16px;min-height:122px;}
     .mtab .chapter-icon{font-size:34px;margin-bottom:4px;}
     .mtab .chapter-name{font-size:21px;}
     .mtab .chapter-place{font-size:15px;}
@@ -366,6 +367,7 @@
         <button class="mtab active" data-mode="mult"><span class="chapter-icon ui-mark">×</span><span class="chapter-name">乘法森林</span><span class="chapter-place">九九冒險</span></button>
         <button class="mtab" data-mode="addsub"><span class="chapter-icon ui-mark">+ −</span><span class="chapter-name">加減村莊</span><span class="chapter-place">心算任務</span></button>
         <button class="mtab" data-mode="div"><span class="chapter-icon ui-mark">÷</span><span class="chapter-name">除法山谷</span><span class="chapter-place">小三挑戰</span></button>
+        <button class="mtab" data-mode="all"><span class="chapter-icon ui-mark">±×÷</span><span class="chapter-name">全能綜合</span><span class="chapter-place">四則挑戰</span></button>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <strong style="font-size:17px;">選擇關卡</strong>
@@ -491,6 +493,11 @@ const STAGE_SETS = {
     {id:'d3', type:'division', divisors:[6,7,8,9], name:'除以 6-9'},
     {id:'d4', type:'division', divisors:[2,3,4,5,6,7,8,9], name:'綜合除法', special:true},
     {id:'d5', type:'remainder', divisors:[2,3,4,5,6,7,8,9], name:'有餘數挑戰', special:true},
+  ],
+  all: [
+    {id:'x1', type:'allmix', ops:['add','sub'], name:'加減綜合'},
+    {id:'x2', type:'allmix', ops:['add','sub','mul'], name:'加減乘綜合'},
+    {id:'x3', type:'allmix', ops:['add','sub','mul','div'], name:'加減乘除綜合', special:true},
   ],
 };
 let curMode = 'mult';
@@ -699,6 +706,7 @@ function stageIcon(stage){
   if(stage.type==='addsub') return '±';
   if(stage.type==='division') return '÷';
   if(stage.type==='remainder') return 'R';
+  if(stage.type==='allmix') return '✦';
   return stage.n || '×';
 }
 
@@ -829,6 +837,15 @@ function numberOptions(ans, deltas){
   }
   return shuffle([...opts].map(String));
 }
+function allMixCandidates(stage){
+  const ops=(stage && stage.ops) || ['add','sub','mul','div'];
+  let out=[];
+  if(ops.includes('mul')) out=out.concat(multCandidates({type:'mixed'}));
+  if(ops.includes('add')) out=out.concat(addSubCandidates('add',{}));
+  if(ops.includes('sub')) out=out.concat(addSubCandidates('sub',{}));
+  if(ops.includes('div')) out=out.concat(divisionCandidates({}));
+  return out;
+}
 function allPracticeCandidates(){
   return [
     ...multCandidates({type:'mixed'}),
@@ -913,6 +930,7 @@ function makeQuestion(stage){
     const deltas=[1,-1,2,-2,3,-3,q.b,-q.b].filter(n=>n!==0);
     return { text:`${q.a} ${q.op} ${q.b}`, sub:'= ?', options:numberOptions(q.ans,deltas), answer:String(q.ans), key:q.key, review:`${q.a} ${q.op} ${q.b}` };
   }
+  if(stage.type==='allmix') return questionFromCandidate(pickNext(allMixCandidates(stage)));
   if(stage.type==='division') return questionFromCandidate(pickNext(divisionCandidates(stage)));
   if(stage.type==='remainder') return questionFromCandidate(pickNext(remainderCandidates(stage)));
   const q=pickNext(multCandidates(stage));
