@@ -1,4 +1,4 @@
-const CACHE_NAME = 'multiplication-fox-game-v10';
+const CACHE_NAME = 'multiplication-fox-game-v11';
 const ASSETS = [
   './',
   './index.html',

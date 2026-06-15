@@ -333,6 +333,15 @@
   @media (prefers-reduced-motion:reduce){
     *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important;}
   }
+
+  /* ===== 桌機/大螢幕：關卡改多欄網格，善用橫向空間，不再是中間一直條 ===== */
+  @media (min-width:900px){
+    .wrap{max-width:1100px;}
+    .stages{grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px 18px;padding:6px 2px;}
+    .stages::before{display:none;}                                   /* 隱藏中間路徑線 */
+    .stage,.stage:nth-child(odd),.stage:nth-child(even){width:auto;justify-self:stretch;}
+    .stage::before{display:none;}                                    /* 隱藏左右連接點 */
+  }
 </style>
 </head>
 <body>
@@ -790,7 +799,7 @@ function divisionCandidates(stage){
   const divisors=stage.divisors || [2,3,4,5,6,7,8,9];
   const maxQ=stage.maxQ || 9;
   divisors.forEach(b=>{
-    for(let q=1;q<=maxQ;q++){
+    for(let q=2;q<=maxQ;q++){            // 從 2 開始，避免 b÷b=1（如 2÷2）這種沒意義的題
       out.push({kind:'div',a:b*q,b,ans:q,key:`div:${b*q}/${b}`});
     }
   });
