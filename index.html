@@ -1817,21 +1817,69 @@ function makeEngQuestion(stage){
 }
 // 每個單字的記憶小技巧（沒列到的會自動產生「字母順序＋雙字母提醒」）
 const TIPS={
-  apple:'蘋果 apple 有兩個 p，唸成 ap-ple',banana:'banana 香蕉：ba-na-na，三段「na」的節奏',
-  egg:'egg 蛋：有兩個 g',green:'green 綠色：有兩個 e，gr-ee-n',yellow:'yellow 黃色：yel-low，兩個 l',
-  rabbit:'rabbit 兔子：有兩個 b，rab-bit',school:'school 學校：sch + ool，有兩個 o',book:'book 書：兩個 o，b-oo-k',
-  noodle:'noodle 麵：兩個 o，noo-dle',happy:'happy 快樂：有兩個 p，hap-py',dress:'dress 洋裝：有兩個 s',
-  sunny:'sunny 晴天：sun（太陽）＋ny，兩個 n',small:'small 小的：有兩個 l，sm-all',tall:'tall 高的：有兩個 l',
-  scissors:'scissors 剪刀：sci-ssors，中間兩個 s',eye:'eye 眼睛：兩個 e 中間夾 y，像兩隻眼睛',
-  fish:'fish 魚：f＋ish（和 dish、wish 同樣 ish 結尾）',water:'water 水：wa-ter',monkey:'monkey 猴子：mon＋key（鑰匙 key）',
-  elephant:'elephant 大象：ele-phant，ph 唸 f 的音',orange:'orange 橘色：or＋ange',purple:'purple 紫色：pur-ple',
-  pencil:'pencil 鉛筆：pen（筆）＋cil',eraser:'eraser 橡皮擦：e-ras-er',notebook:'notebook 筆記本：note＋book',
-  teacher:'teacher 老師：tea（茶）＋cher',doctor:'doctor 醫生：doc＋tor',student:'student 學生：stu-dent',
-  mother:'mother 媽媽：mo-ther（和 father、brother 同 ther 結尾）',father:'father 爸爸：fa-ther',brother:'brother 哥哥：bro＋ther',
-  family:'family 家庭：fa-mi-ly',hospital:'hospital 醫院：hos-pi-tal',library:'library 圖書館：li-bra-ry',
-  rainy:'rainy 雨天：rain（雨）＋y',cloudy:'cloudy 陰天：cloud（雲）＋y',windy:'windy 有風：wind（風）＋y',
-  train:'train 火車：tr＋ain（和 rain 同 ain）',plane:'plane 飛機：pl＋ane',store:'store 商店：st＋ore',
-  jump:'jump 跳：j＋ump（和 bump 同 ump）',swim:'swim 游泳：s＋wim'
+  // 數字
+  one:'one：o-n-e，「只有 one 一個」',two:'two：和「兔」諧音，兩隻兔 two',three:'three：諧音「樹」，有兩個 e：thr-ee',
+  four:'four：諧音「佛」，f-o-u-r',five:'five：fi-ve，記 v 不是 f',six:'six：s-i-x，x 收尾',seven:'seven：se-ven',
+  eight:'eight：特別拼法 eigh，e-i-g-h-t',nine:'nine：n-i-n-e，頭尾都是 n',ten:'ten：和 pen、hen 同 en',
+  eleven:'eleven：e-le-ven（11）',twelve:'twelve：twel-ve（12）',
+  // 顏色
+  red:'red：r-e-d，短短紅紅的',blue:'blue：b-l-ue，記 ue 結尾',yellow:'yellow 黃色：yel-low，兩個 l',
+  green:'green 綠色：有兩個 e，gr-ee-n',black:'black：bl＋ack（和 back 同 ack）',white:'white：wh＋ite（和 kite、bite 同 ite）',
+  pink:'pink：p＋ink（和 think 同 ink）',purple:'purple 紫色：pur-ple',orange:'orange 橘色：or＋ange',
+  brown:'brown：br＋own（和 down、town 同 own）',gray:'gray：gr＋ay（和 day、say 同 ay）',
+  // 動物
+  dog:'dog：d-o-g',cat:'cat：c＋at（和 hat、bat 同 at）',bird:'bird 鳥：b-ir-d，中間是 ir',
+  fish:'fish 魚：f＋ish（和 dish、wish 同 ish）',pig:'pig：p＋ig（和 big、dig 同 ig）',cow:'cow：c＋ow（和 now、how 同 ow）',
+  horse:'horse：hor＋se',duck:'duck：d＋uck（和 luck 同 uck）',rabbit:'rabbit 兔子：有兩個 b，rab-bit',
+  lion:'lion 獅子：li＋on',tiger:'tiger：ti＋ger',monkey:'monkey 猴子：mon＋key（鑰匙 key）',
+  elephant:'elephant 大象：ele-phant，ph 唸 f',bear:'bear：b＋ear（和耳朵 ear 一樣，多個 b）',
+  // 食物
+  apple:'apple 蘋果：有兩個 p，ap-ple',banana:'banana 香蕉：ba-na-na，三段「na」節奏',rice:'rice：r＋ice（和 ice 冰、nice 同 ice）',
+  bread:'bread 麵包：b＋read（裡面有 read 讀）',egg:'egg 蛋：有兩個 g',milk:'milk：m-i-l-k',water:'water 水：wa-ter',
+  noodle:'noodle 麵：兩個 o，noo-dle',cake:'cake：c＋ake（和 lake、make 同 ake）',candy:'candy：can（罐子）＋dy',
+  juice:'juice：ju＋ice（也有 ice）',meat:'meat：m＋eat（裡面有 eat 吃）',
+  // 學用品
+  pen:'pen：p-e-n（和 ten、hen 同 en）',pencil:'pencil 鉛筆：pen（筆）＋cil',book:'book 書：兩個 o，b-oo-k',
+  bag:'bag：b＋ag（和 tag 同 ag）',ruler:'ruler 尺：rule（規則）＋r',eraser:'eraser 橡皮擦：e-ras-er',
+  desk:'desk：d-e-s-k',chair:'chair：ch＋air（空氣 air）',paper:'paper：pa-per',crayon:'crayon：cray＋on',
+  scissors:'scissors 剪刀：sci-ssors，中間兩個 s',notebook:'notebook：note（筆記）＋book（書）',
+  // 身體
+  head:'head：h＋ead（和 read、bread 同 ead）',hand:'hand：h＋and（和「and 和」一樣）',foot:'foot 腳：兩個 o，f-oo-t',
+  eye:'eye 眼睛：兩個 e 夾住 y，像兩隻眼睛',ear:'ear 耳朵：e-a-r',nose:'nose：n＋ose（和 rose 玫瑰 同 ose）',
+  mouth:'mouth：mou＋th',hair:'hair：h＋air（空氣 air）',face:'face：f＋ace（和 race 同 ace）',
+  arm:'arm：a-r-m',leg:'leg：l-e-g',tooth:'tooth 牙齒：兩個 o，t-oo-th',
+  // 家庭
+  father:'father 爸爸：fa-ther',mother:'mother 媽媽：mo-ther（和 father、brother 同 ther）',brother:'brother 哥哥：bro＋ther',
+  sister:'sister 姊姊：sis＋ter',baby:'baby：ba-by，兩個 b',uncle:'uncle：un＋cle',aunt:'aunt：a-u-n-t',family:'family 家庭：fa-mi-ly',
+  // 衣物
+  hat:'hat：h＋at（和 cat、bat 同 at）',shirt:'shirt：sh＋irt',shoes:'shoes 鞋子：sh＋oes（兩隻鞋有 oe）',
+  socks:'socks：so＋cks',pants:'pants：p＋ants（裡面有 ants 螞蟻）',coat:'coat：c＋oat（和 boat 船 同 oat）',
+  dress:'dress 洋裝：有兩個 s',skirt:'skirt：sk＋irt（和 shirt 很像）',gloves:'gloves：glo＋ves',
+  // 天氣
+  sunny:'sunny 晴天：sun（太陽）＋ny，兩個 n',rainy:'rainy 雨天：rain（雨）＋y',cloudy:'cloudy 陰天：cloud（雲）＋y',
+  windy:'windy 有風：wind（風）＋y',hot:'hot：h＋ot（和 dot、pot 同 ot）',cold:'cold：c＋old（和「old 舊」一樣）',
+  snow:'snow：sn＋ow（和 now、how 同 ow）',rain:'rain：r＋ain（和 train 火車 同 ain）',cool:'cool 涼：兩個 o，c-oo-l',
+  // 動作
+  run:'run：r＋un（和 sun、fun 同 un）',walk:'walk：wal＋k（l 幾乎不發音）',jump:'jump 跳：j＋ump（和 bump 同 ump）',
+  eat:'eat：e-a-t',drink:'drink：dr＋ink（和 think 同 ink）',sleep:'sleep 睡：兩個 e，sl-ee-p',read:'read：r＋ead（和 head 同 ead）',
+  write:'write：w 不發音，wr＋ite（和 white 同 ite）',sing:'sing：s＋ing（唱歌 -ing）',dance:'dance：d＋ance',
+  play:'play：pl＋ay（和 day 同 ay）',swim:'swim 游泳：s＋wim',
+  // 星期/時間
+  today:'today：to＋day（今天有 day）',week:'week：兩個 e，w-ee-k',
+  // 職業
+  teacher:'teacher 老師：tea（茶）＋cher',doctor:'doctor 醫生：doc＋tor',nurse:'nurse：nur＋se',
+  farmer:'farmer 農夫：farm（農場）＋er',cook:'cook 廚師：兩個 o，c-oo-k',driver:'driver 司機：drive（開車）＋r',
+  police:'police：po-li-ce',student:'student 學生：stu-dent',singer:'singer 歌手：sing（唱）＋er',
+  // 交通
+  car:'car：c＋ar',bus:'bus：b＋us（諧音「巴士」）',bike:'bike：b＋ike（和 like 同 ike）',train:'train 火車：tr＋ain（和 rain 同 ain）',
+  plane:'plane 飛機：pl＋ane',boat:'boat：b＋oat（和 coat 外套 同 oat）',taxi:'taxi：tax＋i（諧音「的士」）',ship:'ship：sh＋ip（和 hip 同 ip）',
+  // 形容詞
+  big:'big：b＋ig（和 pig 豬 同 ig）',small:'small 小的：有兩個 l，sm-all',tall:'tall 高的：有兩個 l',short:'short：sh＋ort',
+  happy:'happy 快樂：有兩個 p，hap-py',sad:'sad：s＋ad（和 dad 同 ad）',fast:'fast：f＋ast（快！）',slow:'slow：sl＋ow（和 snow 同 ow）',
+  new:'new：n＋ew（和 few 同 ew）',old:'old：o-l-d',long:'long：l＋ong（和 song 歌 同 ong）',
+  // 地點
+  school:'school 學校：sch＋ool，有兩個 o',home:'home：h＋ome（和 come 同 ome）',park:'park：p＋ark（和 dark 同 ark）',
+  zoo:'zoo 動物園：兩個 o，z-oo',store:'store 商店：st＋ore',library:'library 圖書館：li-bra-ry',hospital:'hospital 醫院：hos-pi-tal'
 };
 function spellTip(en){
   if(TIPS[en]) return TIPS[en];
