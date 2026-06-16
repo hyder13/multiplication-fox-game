@@ -1793,11 +1793,8 @@ const ENG_THEMES=[
 ];
 function makeEngQuestion(stage){
   const theme=ENG_THEMES.find(t=>t.id===stage.theme)||ENG_THEMES[0], list=theme.w;
-  let pick=null;
-  for(let i=0;i<24;i++){ const c=list[rnd(0,list.length-1)]; if(!(G && G.recentKeys && G.recentKeys.includes('eng:'+theme.id+':'+c[0]))){ pick=c; break; } }
-  if(!pick) pick=list[rnd(0,list.length-1)];
+  const pick=pickFresh(list, w=>'eng:'+theme.id+':'+w[0]);
   const en=pick[0], zh=pick[1], key='eng:'+theme.id+':'+en;
-  if(G){ G.recentKeys=G.recentKeys||[]; G.recentKeys.push(key); while(G.recentKeys.length>40) G.recentKeys.shift(); G.lastBand=null; }
   const others=shuffle(list.filter(x=>x[0]!==en));
   const canSpeak=typeof window!=='undefined' && window.speechSynthesis;
   const canSpell=/^[a-z]+$/.test(en) && en.length<=8;
@@ -1907,12 +1904,8 @@ function spellPool(level){
 }
 function makeEngSpell(stage){
   const pool=spellPool(stage.level);
-  let pick=null;
-  for(let i=0;i<24;i++){ const c=pool[rnd(0,pool.length-1)]; if(!(G && G.recentKeys && G.recentKeys.includes('spell:'+c[2]+':'+c[0]))){ pick=c; break; } }
-  if(!pick) pick=pool[rnd(0,pool.length-1)];
-  const key='spell:'+pick[2]+':'+pick[0];
-  if(G){ G.recentKeys=G.recentKeys||[]; G.recentKeys.push(key); while(G.recentKeys.length>40) G.recentKeys.shift(); G.lastBand=null; }
-  return buildSpellQ(pick[0], pick[1], key);
+  const pick=pickFresh(pool, c=>'spell:'+c[2]+':'+c[0]);
+  return buildSpellQ(pick[0], pick[1], 'spell:'+pick[2]+':'+pick[0]);
 }
 STAGE_SETS.eng = ENG_THEMES.map(t=>({id:'e_'+t.id, type:'eng', theme:t.id, name:t.name})).concat([
   {id:'e_spell1', type:'engspell', level:1, name:'✏️ 拼字測驗・低年級', special:true},
@@ -2119,14 +2112,31 @@ const BANKS={
     {q:'要解釋或總結下文，前面常用哪個標點？',o:['冒號：','逗號，','頓號、','問號？'],a:0,e:'提示下文用冒號。'}
   ]
 };
+// 發牌式抽題：整個單元的題目出完一輪才會重新洗牌，且不緊接著重複同一題。
+function pickFresh(items, keyOf){
+  if(!items || !items.length) return null;
+  if(G){
+    G.recentKeys = G.recentKeys || [];
+    let avail = items.filter(it=>!G.recentKeys.includes(keyOf(it)));
+    if(!avail.length){                       // 一輪出完，重新洗牌（保留最後一題避免緊接重複）
+      const last = G.recentKeys[G.recentKeys.length-1];
+      G.recentKeys = (last!=null && items.length>1) ? [last] : [];
+      avail = items.filter(it=>!G.recentKeys.includes(keyOf(it)));
+      if(!avail.length) avail = items;
+    }
+    const chosen = avail[rnd(0,avail.length-1)];
+    G.recentKeys.push(keyOf(chosen));
+    while(G.recentKeys.length>items.length) G.recentKeys.shift();
+    G.lastBand=null;
+    return chosen;
+  }
+  return items[rnd(0,items.length-1)];
+}
 function makeBankQuestion(stage){
   const bank=BANKS[stage.bank]||[];
-  let idx=-1;
-  for(let i=0;i<24;i++){ const r=rnd(0,bank.length-1); if(!(G && G.recentKeys && G.recentKeys.includes(stage.bank+':'+r))){ idx=r; break; } }
-  if(idx<0) idx=rnd(0,bank.length-1);
-  const item=bank[idx], key=stage.bank+':'+idx;
-  if(G){ G.recentKeys=G.recentKeys||[]; G.recentKeys.push(key); while(G.recentKeys.length>40) G.recentKeys.shift(); G.lastBand=null; }
-  return { text:`<span class="wordq">${item.q}</span>`, sub:'', options:shuffle(item.o.slice()), answer:item.o[item.a], key, review:item.q, steps:item.e?[item.e]:undefined };
+  if(!bank.length) return null;
+  const item=pickFresh(bank, it=>bank.indexOf(it));
+  return { text:`<span class="wordq">${item.q}</span>`, sub:'', options:shuffle(item.o.slice()), answer:item.o[item.a], key:stage.bank+':'+bank.indexOf(item), review:item.q, steps:item.e?[item.e]:undefined };
 }
 STAGE_SETS.sci=[
   {id:'sci3',type:'bank',bank:'sci3',name:'三年級自然'},
