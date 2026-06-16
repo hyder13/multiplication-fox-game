@@ -266,7 +266,10 @@
     background:rgba(255,255,255,.55);border:2px dashed rgba(118,69,31,.3);
     color:#5a381b;font-size:15px;font-weight:900;line-height:1.45;
   }
-  .progress-grid{display:grid;gap:10px;margin-top:12px;}
+  .progress-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-top:10px;}
+  .prog-section{margin-top:16px;}
+  .prog-section:first-child{margin-top:6px;}
+  .prog-section h4{margin:0;font-size:16px;color:#5a381b;display:flex;align-items:center;gap:6px;}
   .progress-row{
     display:grid;grid-template-columns:88px 1fr 52px;gap:10px;align-items:center;
     padding:9px 10px;border-radius:14px;background:rgba(255,247,212,.75);border:2px solid rgba(118,69,31,.18);
@@ -274,7 +277,7 @@
   }
   .meter{height:14px;border-radius:999px;background:rgba(96,55,21,.16);overflow:hidden;box-shadow:inset 0 2px 3px rgba(80,45,18,.15);}
   .meter span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#35cc76,#ffd45c);}
-  .weak-list{display:grid;gap:8px;margin-top:10px;}
+  .weak-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px;}
   .weak-item{display:flex;justify-content:space-between;gap:10px;padding:9px 10px;border-radius:12px;background:rgba(255,255,255,.58);font-size:14px;font-weight:900;color:#513018;}
   .empty-note{margin:12px 0 0;color:#6f5136;font-size:14px;font-weight:800;line-height:1.45;}
   canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:50;}
@@ -283,6 +286,7 @@
   .modal{position:fixed;inset:0;background:rgba(20,10,40,.55);display:none;align-items:center;justify-content:center;z-index:60;padding:20px;}
   .modal.active{display:flex;}
   .modal .box{background:#fff;border-radius:22px;padding:22px;max-width:420px;width:100%;max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px);overflow-y:auto;-webkit-overflow-scrolling:touch;box-shadow:0 14px 40px rgba(0,0,0,.4);}
+  #progressModal .box{max-width:780px;}        /* 學習狀況：桌機用寬版、能多欄並排 */
   .modal h2{margin:0 0 10px;}
   .modal ul{padding-left:20px;line-height:1.7;font-size:15px;}
   .countdown{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:55;}
@@ -1091,22 +1095,29 @@ function masteryFor(keys){
 }
 function renderProgress(){
   const body=$('#progressBody');
-  const rows=[];
+  const row=(label,m)=>`<div class="progress-row"><span>${label}</span><div class="meter"><span style="width:${m.pct}%"></span></div><span>${m.label}</span></div>`;
+
+  const mulRows=[];
   for(let n=2;n<=9;n++){
     const keys=[];
     for(let b=1;b<=9;b++) keys.push(`mul:${Math.min(n,b)}x${Math.max(n,b)}`);
-    const m=masteryFor(keys);
-    rows.push(`<div class="progress-row"><span>${n} 的乘法</span><div class="meter"><span style="width:${m.pct}%"></span></div><span>${m.label}</span></div>`);
+    mulRows.push(row(`${n} 的乘法`, masteryFor(keys)));
   }
+
+  const addsubRows=[
+    {label:'加法', keys:addSubCandidates('add',{}).map(q=>q.key)},
+    {label:'減法', keys:addSubCandidates('sub',{}).map(q=>q.key)},
+  ].map(g=>row(g.label, masteryFor(g.keys)));
+
   const divRows=[
     {label:'除以 2-5', stage:{type:'division',divisors:[2,3,4,5]}},
     {label:'除以 6-9', stage:{type:'division',divisors:[6,7,8,9]}},
     {label:'有餘數', stage:{type:'remainder',divisors:[2,3,4,5,6,7,8,9]}},
   ].map(group=>{
     const keys=(group.stage.type==='remainder'?remainderCandidates(group.stage):divisionCandidates(group.stage)).map(q=>q.key);
-    const m=masteryFor(keys);
-    return `<div class="progress-row"><span>${group.label}</span><div class="meter"><span style="width:${m.pct}%"></span></div><span>${m.label}</span></div>`;
+    return row(group.label, masteryFor(keys));
   });
+
   const weak=weakCandidates().slice(0,8);
   const weakHtml=weak.length
     ? `<div class="weak-list">${weak.map(item=>{
@@ -1114,9 +1125,13 @@ function renderProgress(){
         return `<div class="weak-item"><span>${candidateLabel(item.q)}</span><span>錯 ${r.wrong}・慢 ${r.slow}</span></div>`;
       }).join('')}</div>`
     : `<div class="empty-note">目前沒有明顯錯題或慢題。多玩幾局後，這裡會顯示需要加強的題目。</div>`;
-  body.innerHTML=`<strong>九九乘法熟練度</strong><div class="progress-grid">${rows.join('')}</div>
-    <div style="height:14px"></div><strong>除法熟練度</strong><div class="progress-grid">${divRows.join('')}</div>
-    <div style="height:14px"></div><strong>需要加強</strong>${weakHtml}`;
+
+  const section=(title,inner)=>`<div class="prog-section"><h4>${title}</h4>${inner}</div>`;
+  body.innerHTML=
+    section('九九乘法熟練度', `<div class="progress-grid">${mulRows.join('')}</div>`)+
+    section('加減法熟練度', `<div class="progress-grid">${addsubRows.join('')}</div>`)+
+    section('除法熟練度', `<div class="progress-grid">${divRows.join('')}</div>`)+
+    section('需要加強', weakHtml);
 }
 
 function floatText(btn, txt, color){
