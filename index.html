@@ -122,6 +122,11 @@
   .mtab[data-mode="alg7"]{background:linear-gradient(150deg,rgba(70,160,120,.9),rgba(28,96,80,.93));}
   .mtab[data-mode="alg8"]{background:linear-gradient(150deg,rgba(150,110,210,.9),rgba(70,40,130,.93));}
   .mtab[data-mode="alg9"]{background:linear-gradient(150deg,rgba(210,90,110,.92),rgba(130,30,50,.93));}
+  .mtab[data-mode="eng"]{background:linear-gradient(150deg,rgba(60,170,180,.92),rgba(20,90,110,.93));}
+  .spk{border:none;background:rgba(63,143,222,.18);border-radius:50%;width:1.7em;height:1.7em;font-size:.8em;line-height:1;cursor:pointer;vertical-align:middle;margin-right:.35em;padding:0;}
+  .spk:active{transform:scale(.92);}
+  .wordq .enw{display:inline-block;font-size:1.5em;letter-spacing:.5px;color:#23506f;}
+  .wordq .zhw{display:inline-block;font-size:1.3em;color:#3a2410;}
   .rad{border-top:1.5px solid currentColor;padding:0 .12em;margin-left:.04em;}
   .opt sup,.question sup{font-size:.62em;}
   .mtab.active{filter:saturate(1.12) brightness(1.08);box-shadow:0 5px 0 #d49b35,0 0 0 3px #fff1a3,inset 0 0 0 2px rgba(255,255,255,.24);}
@@ -421,6 +426,7 @@
         <button class="mtab" data-mode="alg7" data-glo="7" data-ghi="7"><span class="chapter-icon ui-mark">x</span><span class="chapter-name">國一代數</span><span class="chapter-place">七年級</span></button>
         <button class="mtab" data-mode="alg8" data-glo="8" data-ghi="8"><span class="chapter-icon ui-mark">x²</span><span class="chapter-name">國二代數</span><span class="chapter-place">八年級</span></button>
         <button class="mtab" data-mode="alg9" data-glo="9" data-ghi="9"><span class="chapter-icon ui-mark">九</span><span class="chapter-name">國三進階</span><span class="chapter-place">九年級</span></button>
+        <button class="mtab" data-mode="eng" data-glo="1" data-ghi="6"><span class="chapter-icon ui-mark">ABC</span><span class="chapter-name">英文單字</span><span class="chapter-place">小一~六</span></button>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <strong style="font-size:17px;">選擇關卡</strong>
@@ -830,6 +836,7 @@ function stageIcon(stage){
   if(stage.type && stage.type.indexOf('alg_')===0) return 'x';
   if(stage.type && stage.type.indexOf('a8_')===0) return 'x²';
   if(stage.type && stage.type.indexOf('a9_')===0) return '九';
+  if(stage.type==='eng') return 'A';
   return stage.n || '×';
 }
 
@@ -1741,6 +1748,50 @@ function makeAlg9Question(stage){
   return q;
 }
 
+/* ===================== 英文單字（背單字系統，含發音） ===================== */
+function speakWord(w){ try{ if(!window.speechSynthesis) return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(w); u.lang='en-US'; u.rate=0.85; speechSynthesis.speak(u); }catch(e){} }
+const ENG_THEMES=[
+  {id:'num', name:'數字 Numbers', g:1, w:[['one','一'],['two','二'],['three','三'],['four','四'],['five','五'],['six','六'],['seven','七'],['eight','八'],['nine','九'],['ten','十'],['eleven','十一'],['twelve','十二']]},
+  {id:'color', name:'顏色 Colors', g:1, w:[['red','紅色'],['blue','藍色'],['yellow','黃色'],['green','綠色'],['black','黑色'],['white','白色'],['pink','粉紅色'],['purple','紫色'],['orange','橘色'],['brown','棕色'],['gray','灰色']]},
+  {id:'animal', name:'動物 Animals', g:1, w:[['dog','狗'],['cat','貓'],['bird','鳥'],['fish','魚'],['pig','豬'],['cow','牛'],['horse','馬'],['duck','鴨子'],['rabbit','兔子'],['lion','獅子'],['tiger','老虎'],['monkey','猴子'],['elephant','大象'],['bear','熊']]},
+  {id:'food', name:'食物 Food', g:1, w:[['apple','蘋果'],['banana','香蕉'],['rice','飯'],['bread','麵包'],['egg','蛋'],['milk','牛奶'],['water','水'],['noodle','麵'],['cake','蛋糕'],['candy','糖果'],['juice','果汁'],['meat','肉']]},
+  {id:'school', name:'學用品 School', g:1, w:[['pen','筆'],['pencil','鉛筆'],['book','書'],['bag','書包'],['ruler','尺'],['eraser','橡皮擦'],['desk','書桌'],['chair','椅子'],['paper','紙'],['crayon','蠟筆'],['scissors','剪刀'],['notebook','筆記本']]},
+  {id:'body', name:'身體 Body', g:3, w:[['head','頭'],['hand','手'],['foot','腳'],['eye','眼睛'],['ear','耳朵'],['nose','鼻子'],['mouth','嘴巴'],['hair','頭髮'],['face','臉'],['arm','手臂'],['leg','腿'],['tooth','牙齒']]},
+  {id:'family', name:'家庭 Family', g:3, w:[['father','爸爸'],['mother','媽媽'],['brother','哥哥'],['sister','姊姊'],['baby','寶寶'],['grandfather','爺爺'],['grandmother','奶奶'],['uncle','叔叔'],['aunt','阿姨'],['family','家庭']]},
+  {id:'clothes', name:'衣物 Clothes', g:3, w:[['hat','帽子'],['shirt','襯衫'],['shoes','鞋子'],['socks','襪子'],['pants','褲子'],['coat','外套'],['dress','洋裝'],['skirt','裙子'],['gloves','手套']]},
+  {id:'weather', name:'天氣 Weather', g:3, w:[['sunny','晴天'],['rainy','雨天'],['cloudy','陰天'],['windy','有風'],['hot','熱'],['cold','冷'],['snow','雪'],['rain','雨'],['cool','涼']]},
+  {id:'action', name:'動作 Verbs', g:3, w:[['run','跑'],['walk','走'],['jump','跳'],['eat','吃'],['drink','喝'],['sleep','睡'],['read','讀'],['write','寫'],['sing','唱歌'],['dance','跳舞'],['play','玩'],['swim','游泳']]},
+  {id:'day', name:'星期 Days', g:5, w:[['Monday','星期一'],['Tuesday','星期二'],['Wednesday','星期三'],['Thursday','星期四'],['Friday','星期五'],['Saturday','星期六'],['Sunday','星期日'],['today','今天'],['week','星期']]},
+  {id:'job', name:'職業 Jobs', g:5, w:[['teacher','老師'],['doctor','醫生'],['nurse','護士'],['farmer','農夫'],['cook','廚師'],['driver','司機'],['police','警察'],['student','學生'],['singer','歌手']]},
+  {id:'transport', name:'交通 Transport', g:5, w:[['car','汽車'],['bus','公車'],['bike','腳踏車'],['train','火車'],['plane','飛機'],['boat','船'],['taxi','計程車'],['ship','輪船']]},
+  {id:'adj', name:'形容詞 Adjectives', g:5, w:[['big','大的'],['small','小的'],['tall','高的'],['short','矮的'],['happy','快樂的'],['sad','難過的'],['fast','快的'],['slow','慢的'],['new','新的'],['old','舊的'],['long','長的']]},
+  {id:'place', name:'地點 Places', g:5, w:[['school','學校'],['home','家'],['park','公園'],['zoo','動物園'],['store','商店'],['library','圖書館'],['hospital','醫院'],['restaurant','餐廳']]},
+];
+function makeEngQuestion(stage){
+  const theme=ENG_THEMES.find(t=>t.id===stage.theme)||ENG_THEMES[0], list=theme.w;
+  let pick=null;
+  for(let i=0;i<24;i++){ const c=list[rnd(0,list.length-1)]; if(!(G && G.recentKeys && G.recentKeys.includes('eng:'+theme.id+':'+c[0]))){ pick=c; break; } }
+  if(!pick) pick=list[rnd(0,list.length-1)];
+  const en=pick[0], zh=pick[1], key='eng:'+theme.id+':'+en;
+  if(G){ G.recentKeys=G.recentKeys||[]; G.recentKeys.push(key); while(G.recentKeys.length>40) G.recentKeys.shift(); G.lastBand=null; }
+  const others=shuffle(list.filter(x=>x[0]!==en));
+  const canSpeak=typeof window!=='undefined' && window.speechSynthesis;
+  const t=rnd(0, canSpeak?2:1);
+  const spk=`<button class="spk" onclick="speakWord('${en}')" aria-label="唸出 ${en}">🔊</button>`;
+  if(t===0){ // 看英文選中文
+    return { text:`<span class="wordq">${spk} <b class="enw">${en}</b><span class="ask">是什麼意思？</span></span>`, sub:'',
+      options:shuffle([zh,...others.slice(0,3).map(x=>x[1])]), answer:zh, key, review:`${en} = ${zh}` };
+  }
+  if(t===1){ // 看中文選英文
+    return { text:`<span class="wordq"><b class="zhw">${zh}</b><span class="ask">的英文是哪一個？</span></span>`, sub:'',
+      options:shuffle([en,...others.slice(0,3).map(x=>x[0])]), answer:en, key, review:`${zh} = ${en}` };
+  }
+  // 聽發音選中文
+  return { text:`<span class="wordq">${spk}<span class="ask">聽聽看，這個字是什麼意思？</span></span>`, sub:'',
+    options:shuffle([zh,...others.slice(0,3).map(x=>x[1])]), answer:zh, key, review:`(聽) ${en} = ${zh}`, autoSpeak:en };
+}
+STAGE_SETS.eng = ENG_THEMES.map(t=>({id:'e_'+t.id, type:'eng', theme:t.id, name:t.name}));
+
 function makeQuestion(stage){
   if(stage.type==='review'){
     const weak=weakCandidates();
@@ -1773,6 +1824,7 @@ function makeQuestion(stage){
   if(stage.type.indexOf('alg_')===0) return makeAlgQuestion(stage);
   if(stage.type.indexOf('a8_')===0) return makeAlg8Question(stage);
   if(stage.type.indexOf('a9_')===0) return makeAlg9Question(stage);
+  if(stage.type==='eng') return makeEngQuestion(stage);
   if(['unit1','unit2','round','mixops','factor','average','speed','percent','ratio'].includes(stage.type)) return makeAdvQuestion(stage);
   if(stage.type==='allmix') return questionFromCandidate(pickNext(allMixCandidates(stage)));
   if(stage.type==='division') return questionFromCandidate(pickNext(divisionCandidates(stage)));
@@ -1860,6 +1912,7 @@ function nextQuestion(){
     b.onclick=()=>answer(b,opt);
     box.appendChild(b);
   });
+  if(G.q.autoSpeak) setTimeout(()=>speakWord(G.q.autoSpeak), 250);
 }
 
 function starMarkup(text){
