@@ -226,6 +226,9 @@
     animation:scrollIn .28s cubic-bezier(.2,.8,.2,1) both;
   }
   .question small{font-size:.5em;color:var(--muted);font-weight:700;}
+  .question .wordq{display:block;font-size:21px;font-weight:800;line-height:1.6;color:#3a2410;max-width:min(80vw,520px);text-align:center;}
+  .question .wordq .ask{display:block;margin-top:10px;color:#b3551f;font-size:23px;}
+  @media (min-width:700px){ .question .wordq{font-size:26px;} .question .wordq .ask{font-size:28px;} }
   .options{position:relative;z-index:1;display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px;}
   .opt{position:relative;border:4px solid #70431f;border-radius:16px;padding:18px 8px;font-size:28px;font-weight:900;cursor:pointer;color:#fff7d8;
     background:linear-gradient(180deg,#a46431,#74411e 68%,#5c3216);box-shadow:0 8px 0 #3f2412,0 13px 16px rgba(62,39,18,.18),inset 0 0 0 2px rgba(255,229,158,.2);text-shadow:0 2px 0 rgba(35,18,7,.52);transition:transform .08s,box-shadow .08s;}
@@ -502,6 +505,7 @@ const STAGE_SETS = {
     {id:'x1', type:'allmix', ops:['add','sub'], name:'加減綜合'},
     {id:'x2', type:'allmix', ops:['add','sub','mul'], name:'加減乘綜合'},
     {id:'x3', type:'allmix', ops:['add','sub','mul','div'], name:'加減乘除綜合', special:true},
+    {id:'x4', type:'word', name:'生活應用題（兩段式）', special:true},
   ],
 };
 let curMode = 'mult';
@@ -711,6 +715,7 @@ function stageIcon(stage){
   if(stage.type==='division') return '÷';
   if(stage.type==='remainder') return 'R';
   if(stage.type==='allmix') return '✦';
+  if(stage.type==='word') return '題';
   return stage.n || '×';
 }
 
@@ -908,6 +913,75 @@ function questionFromCandidate(q){
   return { text:`${q.a} ${q.op} ${q.b}`, sub:'= ?', options:numberOptions(q.ans,deltas), answer:String(q.ans), key:q.key, review:candidateLabel(q) };
 }
 
+/* ===================== 生活應用題（兩段式加減乘除） ===================== */
+function wordOptions(answer, specials){
+  const opts=new Set([answer]);
+  for(const v of (specials||[])){ if(opts.size>=4) break; if(Number.isInteger(v) && v>=0 && v!==answer) opts.add(v); }
+  const deltas=[1,-1,2,-2,3,-3,5,-5,10,-10];
+  let guard=0;
+  while(opts.size<4 && guard++<80){
+    let c=answer+deltas[rnd(0,deltas.length-1)];
+    if(c<0 || c===answer) c=answer+rnd(1,6);
+    opts.add(c);
+  }
+  return shuffle([...opts].map(String));
+}
+function wordCandidate(){
+  const cn=(n)=>['零','一','兩','三','四','五','六','七','八','九'][n] || String(n);
+  const builders=[
+    ()=>{ const n=rnd(2,4), per=rnd(60,200), disc=rnd(2,6)*10, orig=per*n+disc;
+      return { story:`媽媽生日，蛋糕原價 ${orig} 元，今天買折價 ${disc} 元，我和家人共 ${cn(n)} 人平分。`,
+        prompt:'每個人要出多少元？', answer:per, specials:[orig-disc, Math.floor(orig/n), Math.floor(orig/n)-disc, orig],
+        review:`(${orig}−${disc})÷${n}`, key:`word:cake:${orig}:${disc}:${n}` }; },
+    ()=>{ const u=rnd(5,20), q=rnd(2,6), f=rnd(2,5)*10, ans=u*q+f;
+      return { story:`一枝筆 ${u} 元，買了 ${q} 枝，再加 ${f} 元運費。`,
+        prompt:'總共要付多少元？', answer:ans, specials:[u*q, u+q+f, u*q-f, (u+f)*q],
+        review:`${u}×${q}+${f}`, key:`word:pen:${u}:${q}:${f}` }; },
+    ()=>{ const n=rnd(2,5), each=rnd(4,10), e=rnd(1,each-1), total=each*n;
+      return { story:`${total} 顆糖果平分給 ${cn(n)} 個小朋友，每個人吃掉 ${e} 顆。`,
+        prompt:'每個人還剩幾顆？', answer:each-e, specials:[each, total-e, each+e, total/n],
+        review:`${total}÷${n}−${e}`, key:`word:candy:${total}:${n}:${e}` }; },
+    ()=>{ const w=rnd(20,80), k=rnd(2,6), total=w*k, s=rnd(10,total-1);
+      return { story:`小明每週存 ${w} 元，存了 ${k} 週，後來買玩具花了 ${s} 元。`,
+        prompt:'小明現在還剩多少元？', answer:total-s, specials:[total, total+s, w+s, total-w],
+        review:`${w}×${k}−${s}`, key:`word:save:${w}:${k}:${s}` }; },
+    ()=>{ const u=rnd(8,40), q=rnd(2,5), cost=u*q, paid=Math.ceil((cost+rnd(5,50))/10)*10;
+      return { story:`拿 ${paid} 元，買了 ${q} 個 ${u} 元的麵包。`,
+        prompt:'應該找回多少元？', answer:paid-cost, specials:[paid-u, cost, paid-u-q, paid-cost-10],
+        review:`${paid}−${u}×${q}`, key:`word:change:${paid}:${u}:${q}` }; },
+    ()=>{ const u=rnd(80,200), q=rnd(2,4), cost=u*q, D=rnd(3,12)*10;
+      return { story:`一件衣服 ${u} 元，買了 ${q} 件，結帳時可以折 ${D} 元。`,
+        prompt:'一共要付多少元？', answer:cost-D, specials:[cost, u-D, cost+D, u*q+D],
+        review:`${u}×${q}−${D}`, key:`word:cloth:${u}:${q}:${D}` }; },
+    ()=>{ const half=rnd(6,12), total=half*2, ds=[2,3,4].filter(d=>total%d===0), n=ds[rnd(0,ds.length-1)];
+      return { story:`兩盒餅乾各 ${half} 片，平分給 ${cn(n)} 個人。`,
+        prompt:'每個人分到幾片？', answer:total/n, specials:[half, total, Math.floor(half/n), total-n],
+        review:`(${half}×2)÷${n}`, key:`word:cookie:${half}:${n}` }; },
+    ()=>{ const n=rnd(2,5), perG=rnd(4,8), T=perG*n;
+      return { story:`${T} 個小朋友平分成 ${cn(n)} 組，每組再加 1 位老師。`,
+        prompt:'每一組共有幾人？', answer:perG+1, specials:[perG, T/n, T+1, perG+n],
+        review:`${T}÷${n}+1`, key:`word:group:${T}:${n}` }; },
+  ];
+  for(let i=0;i<60;i++){ const c=builders[rnd(0,builders.length-1)](); if(c && Number.isInteger(c.answer) && c.answer>=0) return c; }
+  return builders[0]();
+}
+function makeWordQuestion(){
+  let c=null;
+  for(let i=0;i<24;i++){
+    c=wordCandidate();
+    if(c && !(G && G.recentKeys && G.recentKeys.includes(c.key))) break;
+  }
+  if(!c) c=wordCandidate();
+  if(G && c){
+    G.recentKeys=G.recentKeys||[];
+    G.recentKeys.push(c.key);
+    while(G.recentKeys.length>40) G.recentKeys.shift();
+    G.lastBand=null;
+  }
+  const text=`<span class="wordq">${c.story}<span class="ask">${c.prompt}</span></span>`;
+  return { text, sub:'', options:wordOptions(c.answer, c.specials), answer:String(c.answer), key:c.key, review:c.review };
+}
+
 function makeQuestion(stage){
   if(stage.type==='review'){
     const weak=weakCandidates();
@@ -934,6 +1008,7 @@ function makeQuestion(stage){
     const deltas=[1,-1,2,-2,3,-3,q.b,-q.b].filter(n=>n!==0);
     return { text:`${q.a} ${q.op} ${q.b}`, sub:'= ?', options:numberOptions(q.ans,deltas), answer:String(q.ans), key:q.key, review:`${q.a} ${q.op} ${q.b}` };
   }
+  if(stage.type==='word') return makeWordQuestion();
   if(stage.type==='allmix') return questionFromCandidate(pickNext(allMixCandidates(stage)));
   if(stage.type==='division') return questionFromCandidate(pickNext(divisionCandidates(stage)));
   if(stage.type==='remainder') return questionFromCandidate(pickNext(remainderCandidates(stage)));
