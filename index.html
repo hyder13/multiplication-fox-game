@@ -112,6 +112,7 @@
   .mtab[data-mode="all"]{background:linear-gradient(150deg,rgba(150,86,176,.86),rgba(72,44,120,.92));}
   .mtab[data-mode="adv"]{background:linear-gradient(150deg,rgba(38,150,140,.88),rgba(18,84,86,.92));}
   .mtab[data-mode="frac"]{background:linear-gradient(150deg,rgba(225,120,70,.9),rgba(150,60,40,.92));}
+  .mtab[data-mode="geo"]{background:linear-gradient(150deg,rgba(90,120,200,.9),rgba(40,60,130,.92));}
   .mtab.active{filter:saturate(1.12) brightness(1.08);box-shadow:0 5px 0 #d49b35,0 0 0 3px #fff1a3,inset 0 0 0 2px rgba(255,255,255,.24);}
   .mtab:active{transform:scale(.97);}
   .stages{
@@ -327,7 +328,7 @@
     .mascot{font-size:86px;}
     .title #homeMascot{width:268px;height:248px;margin-bottom:-4px;}
     .panel{border-radius:30px;padding:24px;}
-    .modetabs{padding:8px;gap:10px;grid-template-columns:repeat(3,1fr);} .mtab{font-size:20px;padding:17px 12px 16px;min-height:122px;}
+    .modetabs{padding:8px;gap:10px;grid-template-columns:repeat(4,1fr);} .mtab{font-size:20px;padding:17px 12px 16px;min-height:122px;}
     .mtab .chapter-icon{font-size:34px;margin-bottom:4px;}
     .mtab .chapter-name{font-size:21px;}
     .mtab .chapter-place{font-size:15px;}
@@ -362,7 +363,7 @@
   /* ===== 桌機/大螢幕：關卡改多欄網格，善用橫向空間，不再是中間一直條 ===== */
   @media (min-width:900px){
     .wrap{max-width:1100px;}
-    .modetabs{grid-template-columns:repeat(6,1fr);}
+    .modetabs{grid-template-columns:repeat(7,1fr);}
     .stages{grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px 18px;padding:6px 2px;}
     .stages::before{display:none;}                                   /* 隱藏中間路徑線 */
     .stage,.stage:nth-child(odd),.stage:nth-child(even){width:auto;justify-self:stretch;}
@@ -395,6 +396,7 @@
         <button class="mtab" data-mode="all"><span class="chapter-icon ui-mark">±×÷</span><span class="chapter-name">全能綜合</span><span class="chapter-place">四則挑戰</span></button>
         <button class="mtab" data-mode="adv"><span class="chapter-icon ui-mark">進</span><span class="chapter-name">進階挑戰</span><span class="chapter-place">三~六年級</span></button>
         <button class="mtab" data-mode="frac"><span class="chapter-icon ui-mark">½</span><span class="chapter-name">分數樂園</span><span class="chapter-place">四~六年級</span></button>
+        <button class="mtab" data-mode="geo"><span class="chapter-icon ui-mark">形</span><span class="chapter-name">圖形計算</span><span class="chapter-place">三~六年級</span></button>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <strong style="font-size:17px;">選擇關卡</strong>
@@ -548,6 +550,15 @@ const STAGE_SETS = {
     {id:'f6', type:'fr_mul', name:'分數×分數', special:true},
     {id:'f7', type:'fr_div', name:'分數÷分數', special:true},
     {id:'f8', type:'fr_ratio', name:'比值（分數）', special:true},
+  ],
+  geo: [
+    {id:'g1', type:'geo_perim', name:'長方形・正方形周長'},
+    {id:'g2', type:'geo_arearect', name:'長方形・正方形面積'},
+    {id:'g3', type:'geo_para', name:'平行四邊形面積'},
+    {id:'g4', type:'geo_tri', name:'三角形面積'},
+    {id:'g5', type:'geo_trap', name:'梯形面積', special:true},
+    {id:'g6', type:'geo_boxvol', name:'長方體體積'},
+    {id:'g7', type:'geo_cubevol', name:'正方體體積', special:true},
   ],
 };
 let curMode = 'mult';
@@ -767,6 +778,7 @@ function stageIcon(stage){
   if(stage.type==='percent') return '%';
   if(stage.type==='ratio') return ':';
   if(stage.type && stage.type.indexOf('fr_')===0) return '½';
+  if(stage.type && stage.type.indexOf('geo_')===0) return '形';
   return stage.n || '×';
 }
 
@@ -1311,6 +1323,73 @@ function makeFracQuestion(stage){
   return q;
 }
 
+/* ===================== 圖形計算（免圖・套公式） ===================== */
+function genGeoPerim(){
+  if(rnd(0,1)===0){
+    let L=rnd(3,20), W=rnd(2,20); if(L===W) W=L+1;
+    const p=2*(L+W);
+    return { text:advText(`長方形：長 ${L} 公分、寬 ${W} 公分。`,'周長是多少公分？'), sub:'',
+      options:wordOptions(p,[L+W, L*W, 2*L+W, 4*L]), answer:String(p), key:`geo:perR:${L}:${W}`, review:`長方形周長 ${L},${W}`,
+      steps:[`周長 =（長 ＋ 寬）× 2`, `（${L} ＋ ${W}）× 2 = ${p}`] };
+  }
+  const s=rnd(3,20), p=4*s;
+  return { text:advText(`正方形：邊長 ${s} 公分。`,'周長是多少公分？'), sub:'',
+    options:wordOptions(p,[s*s, 2*s, 3*s, s+4]), answer:String(p), key:`geo:perS:${s}`, review:`正方形周長 ${s}`,
+    steps:[`周長 = 邊長 × 4`, `${s} × 4 = ${p}`] };
+}
+function genGeoAreaRect(){
+  if(rnd(0,1)===0){
+    let L=rnd(3,20), W=rnd(2,20); if(L===W) W=L+1;
+    const a=L*W;
+    return { text:advText(`長方形：長 ${L} 公分、寬 ${W} 公分。`,'面積是多少平方公分？'), sub:'',
+      options:wordOptions(a,[2*(L+W), L+W, a+L, 2*a]), answer:String(a), key:`geo:arR:${L}:${W}`, review:`長方形面積 ${L},${W}`,
+      steps:[`面積 = 長 × 寬`, `${L} × ${W} = ${a}`] };
+  }
+  const s=rnd(3,20), a=s*s;
+  return { text:advText(`正方形：邊長 ${s} 公分。`,'面積是多少平方公分？'), sub:'',
+    options:wordOptions(a,[4*s, 2*s, s+s, a+s]), answer:String(a), key:`geo:arS:${s}`, review:`正方形面積 ${s}`,
+    steps:[`面積 = 邊長 × 邊長`, `${s} × ${s} = ${a}`] };
+}
+function genGeoPara(){
+  const b=rnd(3,20), h=rnd(2,15), a=b*h;
+  return { text:advText(`平行四邊形：底 ${b} 公分、高 ${h} 公分。`,'面積是多少平方公分？'), sub:'',
+    options:wordOptions(a,[b+h, 2*(b+h), Math.round(b*h/2), a+b]), answer:String(a), key:`geo:para:${b}:${h}`, review:`平行四邊形 ${b},${h}`,
+    steps:[`面積 = 底 × 高`, `${b} × ${h} = ${a}`] };
+}
+function genGeoTri(){
+  let b=rnd(3,20), h=rnd(2,16); if((b*h)%2) h+=1; const a=b*h/2;
+  return { text:advText(`三角形：底 ${b} 公分、高 ${h} 公分。`,'面積是多少平方公分？'), sub:'',
+    options:wordOptions(a,[b*h, b+h, a+b, a+1]), answer:String(a), key:`geo:tri:${b}:${h}`, review:`三角形 ${b},${h}`,
+    steps:[`面積 = 底 × 高 ÷ 2`, `${b} × ${h} ÷ 2 = ${a}`] };
+}
+function genGeoTrap(){
+  let a1=rnd(2,12), b1=rnd(a1+1,18), h=rnd(2,12); if(((a1+b1)*h)%2) h+=1; const ar=(a1+b1)*h/2;
+  return { text:advText(`梯形：上底 ${a1} 公分、下底 ${b1} 公分、高 ${h} 公分。`,'面積是多少平方公分？'), sub:'',
+    options:wordOptions(ar,[(a1+b1)*h, a1+b1+h, Math.round(a1*b1/2), ar+h]), answer:String(ar), key:`geo:trap:${a1}:${b1}:${h}`, review:`梯形 ${a1},${b1},${h}`,
+    steps:[`面積 =（上底 ＋ 下底）× 高 ÷ 2`, `（${a1} ＋ ${b1}）× ${h} ÷ 2 = ${ar}`] };
+}
+function genGeoBoxVol(){
+  const l=rnd(2,9), w=rnd(2,9), h=rnd(2,9), v=l*w*h;
+  return { text:advText(`長方體：長 ${l} 公分、寬 ${w} 公分、高 ${h} 公分。`,'體積是多少立方公分？'), sub:'',
+    options:wordOptions(v,[l*w, 2*(l*w+w*h+l*h), l+w+h, v+l]), answer:String(v), key:`geo:box:${l}:${w}:${h}`, review:`長方體 ${l},${w},${h}`,
+    steps:[`體積 = 長 × 寬 × 高`, `${l} × ${w} × ${h} = ${v}`] };
+}
+function genGeoCubeVol(){
+  const s=rnd(2,8), v=s*s*s;
+  return { text:advText(`正方體：邊長 ${s} 公分。`,'體積是多少立方公分？'), sub:'',
+    options:wordOptions(v,[s*s, 6*s*s, 3*s, s*s*2]), answer:String(v), key:`geo:cube:${s}`, review:`正方體 ${s}`,
+    steps:[`體積 = 邊長 × 邊長 × 邊長`, `${s} × ${s} × ${s} = ${v}`] };
+}
+function makeGeoQuestion(stage){
+  const gens={geo_perim:genGeoPerim,geo_arearect:genGeoAreaRect,geo_para:genGeoPara,geo_tri:genGeoTri,geo_trap:genGeoTrap,geo_boxvol:genGeoBoxVol,geo_cubevol:genGeoCubeVol};
+  const gen=gens[stage.type]||genGeoPerim;
+  let q=null;
+  for(let i=0;i<24;i++){ q=gen(); if(q && !(G && G.recentKeys && G.recentKeys.includes(q.key))) break; }
+  if(!q) q=gen();
+  if(G && q){ G.recentKeys=G.recentKeys||[]; G.recentKeys.push(q.key); while(G.recentKeys.length>40) G.recentKeys.shift(); G.lastBand=null; }
+  return q;
+}
+
 function makeQuestion(stage){
   if(stage.type==='review'){
     const weak=weakCandidates();
@@ -1339,6 +1418,7 @@ function makeQuestion(stage){
   }
   if(stage.type==='word') return makeWordQuestion();
   if(stage.type.indexOf('fr_')===0) return makeFracQuestion(stage);
+  if(stage.type.indexOf('geo_')===0) return makeGeoQuestion(stage);
   if(['unit1','unit2','round','mixops','factor','average','speed','percent','ratio'].includes(stage.type)) return makeAdvQuestion(stage);
   if(stage.type==='allmix') return questionFromCandidate(pickNext(allMixCandidates(stage)));
   if(stage.type==='division') return questionFromCandidate(pickNext(divisionCandidates(stage)));
