@@ -94,7 +94,7 @@
     border:4px solid #8c5a2d;border-radius:22px;padding:16px;
     box-shadow:0 9px 0 #603715,0 20px 34px rgba(47,32,15,.34),inset 0 0 0 3px rgba(255,255,255,.45);
   }
-  .modetabs{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;background:rgba(113,68,32,.16);border-radius:17px;padding:6px;margin-bottom:14px;border:2px solid rgba(93,55,23,.12);}
+  .modetabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(108px,1fr));gap:8px;background:rgba(113,68,32,.16);border-radius:17px;padding:6px;margin-bottom:14px;border:2px solid rgba(93,55,23,.12);}
   .mtab{
     position:relative;min-width:0;border:3px solid rgba(91,52,22,.42);border-radius:16px;padding:12px 6px 10px;
     min-height:96px;font-size:17px;font-weight:900;cursor:pointer;color:#fff;
@@ -114,6 +114,8 @@
   .mtab[data-mode="frac"]{background:linear-gradient(150deg,rgba(225,120,70,.9),rgba(150,60,40,.92));}
   .mtab[data-mode="geo"]{background:linear-gradient(150deg,rgba(90,120,200,.9),rgba(40,60,130,.92));}
   .mtab[data-mode="alg7"]{background:linear-gradient(150deg,rgba(70,160,120,.9),rgba(28,96,80,.93));}
+  .mtab[data-mode="alg8"]{background:linear-gradient(150deg,rgba(150,110,210,.9),rgba(70,40,130,.93));}
+  .rad{border-top:1.5px solid currentColor;padding:0 .12em;margin-left:.04em;}
   .opt sup,.question sup{font-size:.62em;}
   .mtab.active{filter:saturate(1.12) brightness(1.08);box-shadow:0 5px 0 #d49b35,0 0 0 3px #fff1a3,inset 0 0 0 2px rgba(255,255,255,.24);}
   .mtab:active{transform:scale(.97);}
@@ -330,7 +332,7 @@
     .mascot{font-size:86px;}
     .title #homeMascot{width:268px;height:248px;margin-bottom:-4px;}
     .panel{border-radius:30px;padding:24px;}
-    .modetabs{padding:8px;gap:10px;grid-template-columns:repeat(4,1fr);} .mtab{font-size:20px;padding:17px 12px 16px;min-height:122px;}
+    .modetabs{padding:8px;gap:10px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));} .mtab{font-size:20px;padding:17px 12px 16px;min-height:122px;}
     .mtab .chapter-icon{font-size:34px;margin-bottom:4px;}
     .mtab .chapter-name{font-size:21px;}
     .mtab .chapter-place{font-size:15px;}
@@ -365,7 +367,7 @@
   /* ===== 桌機/大螢幕：關卡改多欄網格，善用橫向空間，不再是中間一直條 ===== */
   @media (min-width:900px){
     .wrap{max-width:1100px;}
-    .modetabs{grid-template-columns:repeat(8,1fr);}
+    .modetabs{grid-template-columns:repeat(auto-fit,minmax(120px,1fr));}
     .stages{grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px 18px;padding:6px 2px;}
     .stages::before{display:none;}                                   /* 隱藏中間路徑線 */
     .stage,.stage:nth-child(odd),.stage:nth-child(even){width:auto;justify-self:stretch;}
@@ -400,6 +402,7 @@
         <button class="mtab" data-mode="frac"><span class="chapter-icon ui-mark">½</span><span class="chapter-name">分數樂園</span><span class="chapter-place">四~六年級</span></button>
         <button class="mtab" data-mode="geo"><span class="chapter-icon ui-mark">形</span><span class="chapter-name">圖形計算</span><span class="chapter-place">三~六年級</span></button>
         <button class="mtab" data-mode="alg7"><span class="chapter-icon ui-mark">x</span><span class="chapter-name">國一代數</span><span class="chapter-place">七年級</span></button>
+        <button class="mtab" data-mode="alg8"><span class="chapter-icon ui-mark">x²</span><span class="chapter-name">國二代數</span><span class="chapter-place">八年級</span></button>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <strong style="font-size:17px;">選擇關卡</strong>
@@ -570,6 +573,14 @@ const STAGE_SETS = {
     {id:'n4', type:'alg_system', name:'二元一次聯立', special:true},
     {id:'n5', type:'alg_ineq', name:'一元一次不等式', special:true},
     {id:'n6', type:'alg_expo', name:'指數與科學記號', special:true},
+  ],
+  alg8: [
+    {id:'b1', type:'a8_mulform', name:'乘法公式'},
+    {id:'b2', type:'a8_poly', name:'多項式運算'},
+    {id:'b3', type:'a8_factor', name:'因式分解', special:true},
+    {id:'b4', type:'a8_sqrt', name:'平方根'},
+    {id:'b5', type:'a8_pyth', name:'畢氏定理'},
+    {id:'b6', type:'a8_quad', name:'一元二次方程式', special:true},
   ],
 };
 let curMode = 'mult';
@@ -791,6 +802,7 @@ function stageIcon(stage){
   if(stage.type && stage.type.indexOf('fr_')===0) return '½';
   if(stage.type && stage.type.indexOf('geo_')===0) return '形';
   if(stage.type && stage.type.indexOf('alg_')===0) return 'x';
+  if(stage.type && stage.type.indexOf('a8_')===0) return 'x²';
   return stage.n || '×';
 }
 
@@ -1067,7 +1079,7 @@ function makeWordQuestion(){
 
 /* ===================== 進階挑戰（三~六年級・依課綱） ===================== */
 function gcd(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){ [a,b]=[b,a%b]; } return a||1; }
-function advText(main, ask){ return `<span class="wordq">${esc(main)}${ask?`<span class="ask">${esc(ask)}</span>`:''}</span>`; }
+function advText(main, ask){ return `<span class="wordq">${esc(expoHTML(main))}${ask?`<span class="ask">${esc(expoHTML(ask))}</span>`:''}</span>`; }
 function strOptions(answer, cands){
   const opts=new Set([answer]);
   for(const d of (cands||[])){ if(opts.size>=4) break; if(d && d!==answer) opts.add(d); }
@@ -1407,7 +1419,7 @@ function numStr(n){ return n<0 ? '−'+Math.abs(n) : String(n); }
 // 把當作運算子的 < > （前後有空白）轉成 HTML 實體，避免被 innerHTML 當成標籤。
 // 產生的 <sup>/<span> 標籤緊接無空白，不受影響。
 function esc(s){ return String(s).replace(/ < /g,' &lt; ').replace(/ > /g,' &gt; '); }
-function expoHTML(s){ return String(s).replace(/(\d+|[a-z])\^(-?\d+)/g, '$1<sup>$2</sup>'); }
+function expoHTML(s){ return String(s).replace(/([\w)\]])\^(-?\d+)/g, '$1<sup>$2</sup>').replace(/√(\d+)/g, '√<span class="rad">$1</span>'); }
 function mathHTML(tok){
   tok=String(tok);
   if(/^\d+_\d+\/\d+$/.test(tok) || /^-?\d+\/\d+$/.test(tok)) return fracHTML(tok);
@@ -1481,23 +1493,140 @@ function genIneq(){
 function genExpo(){
   const t=rnd(0,2);
   if(t===0){ const base=[2,3,5][rnd(0,2)], e=rnd(2,4), v=base**e;
-    return { text:advText(expoHTML(`${base}^${e} = ?`),''), sub:'',
+    return { text:advText(`${base}^${e} = ?`,''), sub:'',
       options:intOptions(v,[base*e, v+base, base**(e-1), v-base]), answer:numStr(v), key:`alg:expv:${base}:${e}`, review:`${base}^${e}=${v}`,
-      steps:[`${base}^${e} 代表 ${e} 個 ${base} 相乘`, expoHTML(`${base}^${e} = ${v}`)] };
+      steps:[`${base}^${e} 代表 ${e} 個 ${base} 相乘`, `${base}^${e} = ${v}`] };
   }
   if(t===1){ const base=[2,3,5,10][rnd(0,3)], m=rnd(1,4), n=rnd(1,4); const ans=`${base}^${m+n}`;
-    return { text:advText(expoHTML(`${base}^${m} × ${base}^${n} = ?`),''), sub:'',
+    return { text:advText(`${base}^${m} × ${base}^${n} = ?`,''), sub:'',
       options:strOptions(ans,[`${base}^${m*n}`,`${base}^${m+n+1}`,`${base*base}^${m+n}`,`${base}^${Math.abs(m-n)||1}`]), answer:ans, key:`alg:exmul:${base}:${m}:${n}`, review:`${base}^${m}×${base}^${n}`,
-      steps:[`指數律：底數不變、指數相加`, expoHTML(`${base}^${m} × ${base}^${n} = ${base}^${m+n}`)] };
+      steps:[`指數律：底數不變、指數相加`, `${base}^${m} × ${base}^${n} = ${base}^${m+n}`] };
   }
   const d=rnd(1,9), z=rnd(3,6), v=d*(10**z), vs=v.toLocaleString('en-US'); const ans=`${d}×10^${z}`;
   return { text:advText(`${vs} 用科學記號表示 = ?`,''), sub:'',
     options:strOptions(ans,[`${d}×10^${z+1}`,`${d}×10^${z-1}`,`${d*10}×10^${z-1}`]), answer:ans, key:`alg:sci:${v}`, review:`${vs}=${ans}`,
-    steps:[`把小數點移到第一位數字後面`, expoHTML(`${vs} = ${d}×10^${z}`)] };
+    steps:[`把小數點移到第一位數字後面`, `${vs} = ${d}×10^${z}`] };
 }
 function makeAlgQuestion(stage){
   const gens={alg_negarith:genNegArith,alg_abs:genAbs,alg_lineq:genLinEq,alg_system:genSystem,alg_ineq:genIneq,alg_expo:genExpo};
   const gen=gens[stage.type]||genNegArith;
+  let q=null;
+  for(let i=0;i<24;i++){ q=gen(); if(q && !(G && G.recentKeys && G.recentKeys.includes(q.key))) break; }
+  if(!q) q=gen();
+  if(G && q){ G.recentKeys=G.recentKeys||[]; G.recentKeys.push(q.key); while(G.recentKeys.length>40) G.recentKeys.shift(); G.lastBand=null; }
+  return q;
+}
+
+/* ===================== 國二 數與代數（多項式/根號/畢氏/二次） ===================== */
+function polyStr(terms){
+  let out='';
+  for(const [co,v] of terms){
+    if(co===0) continue;
+    const mag=Math.abs(co);
+    const piece=(v?(mag===1?'':String(mag)):String(mag))+v;
+    out += out==='' ? (co<0?'−':'')+piece : (co<0?' − ':' + ')+piece;
+  }
+  return out===''?'0':out;
+}
+function genMulForm(){
+  const T=n=>`${n<0?'− ':'+ '}${Math.abs(n)}`;
+  const Q=(main,ans,dist,steps,key,review)=>({ text:advText(`${main} = ?`,''), sub:'', options:strOptions(ans,dist), answer:ans, key:`a8:${key}`, review, steps });
+  const t=rnd(0,2);
+  if(t===0){ const p=rnd(1,9)*(rnd(0,1)?1:-1);
+    const ans=polyStr([[1,'x^2'],[2*p,'x'],[p*p,'']]);
+    return Q(`(x ${T(p)})^2`, ans, [polyStr([[1,'x^2'],[p*p,'']]), polyStr([[1,'x^2'],[p,'x'],[p*p,'']]), polyStr([[1,'x^2'],[2*p,'x'],[2*Math.abs(p),'']])],
+      [`乘法公式：(a ± b)² = a² ± 2ab + b²`, `= ${ans}`], `mf0:${p}`, `(x${T(p)})^2`);
+  }
+  if(t===1){ const p=rnd(1,9);
+    const ans=polyStr([[1,'x^2'],[-p*p,'']]);
+    return Q(`(x + ${p})(x − ${p})`, ans, [polyStr([[1,'x^2'],[p*p,'']]), polyStr([[1,'x^2'],[-2*p,'x'],[-p*p,'']]), polyStr([[1,'x^2'],[-p,'']])],
+      [`平方差公式：(a + b)(a − b) = a² − b²`, `= ${ans}`], `mf1:${p}`, `(x+${p})(x−${p})`);
+  }
+  const p=rnd(1,9)*(rnd(0,1)?1:-1), q=rnd(1,9)*(rnd(0,1)?1:-1);
+  const ans=polyStr([[1,'x^2'],[p+q,'x'],[p*q,'']]);
+  return Q(`(x ${T(p)})(x ${T(q)})`, ans, [polyStr([[1,'x^2'],[p*q,'x'],[p+q,'']]), polyStr([[1,'x^2'],[p*q,'']]), polyStr([[1,'x^2'],[p+q,'x'],[-p*q,'']])],
+    [`分配律展開後合併同類項`, `= ${ans}`], `mf2:${p}:${q}`, `(x${T(p)})(x${T(q)})`);
+}
+function genPoly8(){
+  const T=n=>`${n<0?'− ':'+ '}${Math.abs(n)}`;
+  const Q=(main,ans,dist,key,steps)=>({ text:advText(`${main} = ?`,''), sub:'', options:strOptions(ans,dist), answer:ans, key:`a8:${key}`, review:main, steps });
+  const cx=n=>`${n===1?'':n}x`;
+  const A=rnd(1,5), B=rnd(-9,9)||3, C=rnd(1,5), D=rnd(-9,9)||2, t=rnd(0,2);
+  if(t===0){ const ans=polyStr([[A+C,'x'],[B+D,'']]);
+    return Q(`(${cx(A)} ${T(B)}) + (${cx(C)} ${T(D)})`, ans, [polyStr([[A+C,'x'],[B-D,'']]),polyStr([[A*C,'x'],[B+D,'']]),polyStr([[A+C,'x'],[B+D+2,'']])], `padd:${A}:${B}:${C}:${D}`);
+  }
+  if(t===1){ const ans=polyStr([[A-C,'x'],[B-D,'']]);
+    return Q(`(${cx(A)} ${T(B)}) − (${cx(C)} ${T(D)})`, ans, [polyStr([[A-C,'x'],[B+D,'']]),polyStr([[A+C,'x'],[B-D,'']]),polyStr([[A-C,'x'],[B-D+2,'']])], `psub:${A}:${B}:${C}:${D}`);
+  }
+  const p=rnd(1,9)*(rnd(0,1)?1:-1), q=rnd(1,9)*(rnd(0,1)?1:-1);
+  const ans=polyStr([[1,'x^2'],[p+q,'x'],[p*q,'']]);
+  return Q(`(x ${T(p)})(x ${T(q)})`, ans, [polyStr([[1,'x^2'],[p*q,'x'],[p+q,'']]),polyStr([[1,'x^2'],[p+q,'x'],[-p*q,'']]),polyStr([[1,'x^2'],[p*q,'']])], `pmul:${p}:${q}`,
+    [`分配律展開`, `= ${ans}`]);
+}
+function genFactor8(){
+  const fb=n=>`(x ${n<0?'− ':'+ '}${Math.abs(n)})`;
+  const Q=(main,ans,dist,steps,key)=>({ text:advText(`${main} 因式分解 = ?`,''), sub:'', options:strOptions(ans,dist), answer:ans, key:`a8:${key}`, review:main, steps });
+  const t=rnd(0,2);
+  if(t===0){ const p=rnd(1,9)*(rnd(0,1)?1:-1), q=rnd(1,9)*(rnd(0,1)?1:-1);
+    const main=polyStr([[1,'x^2'],[p+q,'x'],[p*q,'']]);
+    return Q(main, `${fb(p)}${fb(q)}`, [`${fb(-p)}${fb(-q)}`,`${fb(p)}${fb(-q)}`,`${fb(p+1)}${fb(q)}`],
+      [`找兩數相乘 = ${p*q}、相加 = ${p+q}`, `就是 ${numStr(p)} 和 ${numStr(q)} → ${fb(p)}${fb(q)}`], `ftri:${p}:${q}`);
+  }
+  if(t===1){ const p=rnd(2,9); const main=polyStr([[1,'x^2'],[-p*p,'']]);
+    return Q(main, `(x + ${p})(x − ${p})`, [`(x − ${p})(x − ${p})`,`(x + ${p})(x + ${p})`,`(x + ${p*p})(x − ${p*p})`],
+      [`平方差：a² − b² = (a + b)(a − b)`, `${main} = (x + ${p})(x − ${p})`], `fds:${p}`);
+  }
+  const k=rnd(2,6), a=rnd(2,6), b=rnd(1,9)*(rnd(0,1)?1:-1);
+  const main=polyStr([[k*a,'x'],[k*b,'']]);
+  const sgn=b<0?'− ':'+ ', m=Math.abs(b);
+  return Q(main, `${k}(${a}x ${sgn}${m})`, [`${k}(${a}x ${b<0?'+ ':'− '}${m})`,`${a}(${k}x ${sgn}${m})`,`${k*a}(x ${sgn}${m})`],
+    [`提出公因數 ${k}`, `= ${k}(${a}x ${sgn}${m})`], `fcf:${k}:${a}:${b}`);
+}
+function genSqrt8(){
+  if(rnd(0,1)===0){ const n=rnd(2,15), v=n*n;
+    return { text:advText(`√${v} = ?`,''), sub:'', options:wordOptions(n,[v,n+1,n-1,Math.round(v/2)]), answer:String(n), key:`a8:sqp:${v}`, review:`√${v}=${n}`,
+      steps:[`找一個數平方等於 ${v}`, `${n} × ${n} = ${v}，所以 √${v} = ${n}`] };
+  }
+  const tbl=[[8,'2√2'],[12,'2√3'],[18,'3√2'],[20,'2√5'],[27,'3√3'],[32,'4√2'],[45,'3√5'],[48,'4√3'],[50,'5√2'],[72,'6√2'],[75,'5√3'],[98,'7√2']];
+  const pick=tbl[rnd(0,tbl.length-1)], rad=pick[0], ans=pick[1];
+  const dist=shuffle(tbl.filter(e=>e[0]!==rad).map(e=>e[1])).slice(0,3);
+  return { text:advText(`√${rad} = ?（化成最簡）`,''), sub:'', options:strOptions(ans,dist), answer:ans, key:`a8:sqs:${rad}`, review:`√${rad}=${ans}`,
+    steps:[`把根號內拆成「平方數 × 其餘」再開出來`, `√${rad} = ${ans}`] };
+}
+function genPyth(){
+  const tri=[[3,4,5],[6,8,10],[5,12,13],[8,15,17],[9,12,15],[7,24,25],[20,21,29],[9,40,41]];
+  const [a,b,c]=tri[rnd(0,tri.length-1)];
+  if(rnd(0,1)===0){
+    return { text:advText(`直角三角形兩股長 ${a} 和 ${b}。`,'斜邊長是多少？'), sub:'',
+      options:wordOptions(c,[a+b,c+1,c-1,a*b]), answer:String(c), key:`a8:pyth:h:${a}:${b}`, review:`√(${a}²+${b}²)=${c}`,
+      steps:[`畢氏定理：斜邊² = ${a}² + ${b}² = ${a*a+b*b}`, `斜邊 = √${a*a+b*b} = ${c}`] };
+  }
+  return { text:advText(`直角三角形斜邊長 ${c}、一股長 ${a}。`,'另一股長是多少？'), sub:'',
+    options:wordOptions(b,[c-a,c+a,b+1,b-1]), answer:String(b), key:`a8:pyth:l:${c}:${a}`, review:`√(${c}²−${a}²)=${b}`,
+    steps:[`畢氏定理：另一股² = ${c}² − ${a}² = ${c*c-a*a}`, `另一股 = √${c*c-a*a} = ${b}`] };
+}
+function genQuad(){
+  const T=n=>`${n<0?'− ':'+ '}${Math.abs(n)}`;
+  if(rnd(0,1)===0){
+    let r1=rnd(-6,6), r2=rnd(-6,6); while(r1+r2===0||r1*r2===0){ r1=rnd(-6,6); r2=rnd(-6,6); }
+    const b=-(r1+r2), c=r1*r2;
+    const main=`x^2 ${T(b)}x ${T(c)} = 0`;
+    const lo=Math.min(r1,r2), hi=Math.max(r1,r2);
+    const ans=`x = ${numStr(lo)} 或 ${numStr(hi)}`;
+    return { text:advText(main,'x = ?'), sub:'',
+      options:strOptions(ans,[`x = ${numStr(-lo)} 或 ${numStr(-hi)}`, `x = ${numStr(lo)} 或 ${numStr(-hi)}`, `x = ${numStr(lo+1)} 或 ${numStr(hi)}`]),
+      answer:ans, key:`a8:quad:${r1}:${r2}`, review:main,
+      steps:[`因式分解：(x ${T(-r1)})(x ${T(-r2)}) = 0`, `所以 x = ${numStr(lo)} 或 ${numStr(hi)}`] };
+  }
+  const k=rnd(2,12), main=`x^2 = ${k*k}`, ans=`x = ${k} 或 −${k}`;
+  return { text:advText(main,'x = ?'), sub:'',
+    options:strOptions(ans,[`x = ${k}`, `x = ${k*k}`, `x = ${k} 或 ${k}`]),
+    answer:ans, key:`a8:quad2:${k}`, review:main,
+    steps:[`兩邊開平方，別忘了正負兩個解`, `x = ${k} 或 −${k}`] };
+}
+function makeAlg8Question(stage){
+  const gens={a8_mulform:genMulForm,a8_poly:genPoly8,a8_factor:genFactor8,a8_sqrt:genSqrt8,a8_pyth:genPyth,a8_quad:genQuad};
+  const gen=gens[stage.type]||genMulForm;
   let q=null;
   for(let i=0;i<24;i++){ q=gen(); if(q && !(G && G.recentKeys && G.recentKeys.includes(q.key))) break; }
   if(!q) q=gen();
@@ -1535,6 +1664,7 @@ function makeQuestion(stage){
   if(stage.type.indexOf('fr_')===0) return makeFracQuestion(stage);
   if(stage.type.indexOf('geo_')===0) return makeGeoQuestion(stage);
   if(stage.type.indexOf('alg_')===0) return makeAlgQuestion(stage);
+  if(stage.type.indexOf('a8_')===0) return makeAlg8Question(stage);
   if(['unit1','unit2','round','mixops','factor','average','speed','percent','ratio'].includes(stage.type)) return makeAdvQuestion(stage);
   if(stage.type==='allmix') return questionFromCandidate(pickNext(allMixCandidates(stage)));
   if(stage.type==='division') return questionFromCandidate(pickNext(divisionCandidates(stage)));
@@ -1665,7 +1795,7 @@ function answer(btn, choice){
 function showExplain(correct){
   clearInterval(timerId);
   const marks=['①','②','③','④'];
-  const rows=G.q.steps.map((s,i)=>`<div class="exp-row">${marks[i]||'•'} ${esc(s)}</div>`).join('');
+  const rows=G.q.steps.map((s,i)=>`<div class="exp-row">${marks[i]||'•'} ${esc(expoHTML(s))}</div>`).join('');
   const box=$('#explain');
   box.innerHTML=`<div class="exp-title">${correct?'答對了！我們一起看一次 👇':'沒關係，看看怎麼算 👇'}</div>`
     +rows
