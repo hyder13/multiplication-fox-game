@@ -1815,13 +1815,39 @@ function makeEngQuestion(stage){
   }
   return buildSpellQ(en, zh, key);
 }
+// 每個單字的記憶小技巧（沒列到的會自動產生「字母順序＋雙字母提醒」）
+const TIPS={
+  apple:'蘋果 apple 有兩個 p，唸成 ap-ple',banana:'banana 香蕉：ba-na-na，三段「na」的節奏',
+  egg:'egg 蛋：有兩個 g',green:'green 綠色：有兩個 e，gr-ee-n',yellow:'yellow 黃色：yel-low，兩個 l',
+  rabbit:'rabbit 兔子：有兩個 b，rab-bit',school:'school 學校：sch + ool，有兩個 o',book:'book 書：兩個 o，b-oo-k',
+  noodle:'noodle 麵：兩個 o，noo-dle',happy:'happy 快樂：有兩個 p，hap-py',dress:'dress 洋裝：有兩個 s',
+  sunny:'sunny 晴天：sun（太陽）＋ny，兩個 n',small:'small 小的：有兩個 l，sm-all',tall:'tall 高的：有兩個 l',
+  scissors:'scissors 剪刀：sci-ssors，中間兩個 s',eye:'eye 眼睛：兩個 e 中間夾 y，像兩隻眼睛',
+  fish:'fish 魚：f＋ish（和 dish、wish 同樣 ish 結尾）',water:'water 水：wa-ter',monkey:'monkey 猴子：mon＋key（鑰匙 key）',
+  elephant:'elephant 大象：ele-phant，ph 唸 f 的音',orange:'orange 橘色：or＋ange',purple:'purple 紫色：pur-ple',
+  pencil:'pencil 鉛筆：pen（筆）＋cil',eraser:'eraser 橡皮擦：e-ras-er',notebook:'notebook 筆記本：note＋book',
+  teacher:'teacher 老師：tea（茶）＋cher',doctor:'doctor 醫生：doc＋tor',student:'student 學生：stu-dent',
+  mother:'mother 媽媽：mo-ther（和 father、brother 同 ther 結尾）',father:'father 爸爸：fa-ther',brother:'brother 哥哥：bro＋ther',
+  family:'family 家庭：fa-mi-ly',hospital:'hospital 醫院：hos-pi-tal',library:'library 圖書館：li-bra-ry',
+  rainy:'rainy 雨天：rain（雨）＋y',cloudy:'cloudy 陰天：cloud（雲）＋y',windy:'windy 有風：wind（風）＋y',
+  train:'train 火車：tr＋ain（和 rain 同 ain）',plane:'plane 飛機：pl＋ane',store:'store 商店：st＋ore',
+  jump:'jump 跳：j＋ump（和 bump 同 ump）',swim:'swim 游泳：s＋wim'
+};
+function spellTip(en){
+  if(TIPS[en]) return TIPS[en];
+  const chant=en.split('').join('-');
+  let dbl=''; for(let i=1;i<en.length;i++){ if(en[i]===en[i-1]){ dbl=en[i]; break; } }
+  let t='把字母依順序記：'+chant;
+  if(dbl) t+='，注意有兩個「'+dbl+'」';
+  return t;
+}
 function buildSpellQ(en, zh, key){
   const alpha='abcdefghijklmnopqrstuvwxyz', extra=[];
   if(en.length<=6){ while(extra.length<2){ const c=alpha[rnd(0,25)]; if(!en.includes(c)&&!extra.includes(c)) extra.push(c); } }
   const tiles=shuffle(en.split('').concat(extra));
   const spk=`<button class="spk" onclick="speakWord('${en}')" aria-label="唸出 ${en}">🔊</button>`;
   return { spell:true, text:`<span class="wordq">${spk} <b class="zhw">${zh}</b><span class="ask">拼出英文單字（點字母）</span></span>`,
-    sub:'', tiles, answer:en, key, review:`拼字 ${zh} = ${en}`, autoSpeak:en };
+    sub:'', tiles, answer:en, key, review:`拼字 ${zh} = ${en}`, autoSpeak:en, tip:spellTip(en) };
 }
 function spellPool(level){
   const pool=[];
@@ -2317,11 +2343,16 @@ function spellCheck(){
   const elapsed = performance.now()-G.qStart;
   const slots=$('#spellSlots');
   slots.classList.add(correct?'good':'bad');
-  if(!correct){ const a=$('#spellAnswer'); a.textContent='正確：'+G.q.answer; a.style.display=''; speakWord(G.q.answer); }
   document.querySelectorAll('.tile,.spellctl').forEach(b=>b.disabled=true);
   awardResult(correct, elapsed, slots);
-  if(G.score>=GOAL){ G.cleared=true; setTimeout(()=>{ clearInterval(timerId); endGame(true); },800); return; }
-  setTimeout(nextQuestion, correct?800:1500);
+  if(correct){
+    if(G.score>=GOAL){ G.cleared=true; setTimeout(()=>{ clearInterval(timerId); endGame(true); },800); return; }
+    setTimeout(nextQuestion, 800); return;
+  }
+  // 拼錯：唸出正確單字，並用解說面板教「怎麼記」
+  speakWord(G.q.answer);
+  G.q.steps=[ '正確拼法：'+G.q.answer.split('').join(' - '), '記法：'+(G.q.tip||spellTip(G.q.answer)) ];
+  showExplain(false, '沒關係！這樣記比較快 👇');
 }
 function renderSpell(){
   const box=$('#options');
@@ -2338,12 +2369,12 @@ function renderSpell(){
 
 
 // 應用題作答後，顯示「先算…再算…」兩步解法，並暫停計時讓孩子看懂再繼續。
-function showExplain(correct){
+function showExplain(correct, title){
   clearInterval(timerId);
   const marks=['①','②','③','④'];
   const rows=G.q.steps.map((s,i)=>`<div class="exp-row">${marks[i]||'•'} ${esc(expoHTML(s))}</div>`).join('');
   const box=$('#explain');
-  box.innerHTML=`<div class="exp-title">${correct?'答對了！我們一起看一次 👇':'沒關係，看看怎麼算 👇'}</div>`
+  box.innerHTML=`<div class="exp-title">${title || (correct?'答對了！我們一起看一次 👇':'沒關係，看看怎麼算 👇')}</div>`
     +rows
     +`<div class="exp-ans">所以答案是 ${mathHTML(G.q.answer)}</div>`
     +`<button class="btn cont" id="contBtn">繼續 ›</button>`;
