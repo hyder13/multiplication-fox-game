@@ -27,7 +27,7 @@
     color:var(--ink);
     background:
       linear-gradient(180deg,rgba(56,153,203,.26),rgba(28,92,64,.48)),
-      url("game_bg_forest.png") center/cover fixed,
+      url("game_bg_forest.webp") center/cover fixed,
       linear-gradient(135deg,var(--sky),var(--leaf));
     background-attachment:fixed;
     overflow-x:hidden;
@@ -395,7 +395,7 @@
       <button class="iconbtn" id="soundBtn" title="音效開關">音</button>
     </div>
     <div class="title">
-      <div class="mascot" id="homeMascot"><img class="homeFox" src="homepage-fox.png" alt=""></div>
+      <div class="mascot" id="homeMascot"><img class="homeFox" src="homepage-fox.webp" alt=""></div>
       <h1>九九乘法闖關王</h1>
       <p>3 分鐘衝 100 分，一關一關變高手！</p>
     </div>
@@ -764,7 +764,7 @@ const screens={home:$('#home'),game:$('#game'),result:$('#result')};
 function show(name){ for(const k in screens) screens[k].classList.toggle('active', k===name); }
 
 /* 吉祥物圖片（載入失敗自動退回 emoji） */
-const MASCOT={idle:'fox_idle.png',correct:'fox_correct.png',excited:'fox_excited.png',wrong:'fox_wrong.png',celebrate:'fox_celebrate.png',cheer:'fox_cheer.png'};
+const MASCOT={idle:'fox_idle.webp',correct:'fox_correct.webp',excited:'fox_excited.webp',wrong:'fox_wrong.webp',celebrate:'fox_celebrate.webp',cheer:'fox_cheer.webp'};
 const MEMOJI={idle:'🦊',correct:'😄',excited:'🤩',wrong:'😵',celebrate:'🎉',cheer:'😅'};
 function setMascot(el, state){
   if(!el) return;
@@ -782,7 +782,7 @@ function setHomeMascot(){
   const img=new Image();
   img.className='homeFox'; img.alt='';
   img.onerror=function(){ setMascot(el,'idle'); };
-  img.src='homepage-fox.png';
+  img.src='homepage-fox.webp';
   el.appendChild(img);
 }
 
