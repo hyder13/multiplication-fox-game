@@ -141,7 +141,10 @@
     background:linear-gradient(180deg,#fff3d0,#ffd98c);color:#5a2f0c;cursor:pointer;box-shadow:0 5px 0 #9a6322;transition:transform .07s,box-shadow .07s;}
   .tile:active{transform:translateY(3px);box-shadow:0 2px 0 #9a6322;}
   .tile.used{opacity:.28;pointer-events:none;}
-  .spellctl{display:block;margin:14px auto 0;border:2px solid #70431f;border-radius:12px;background:#fff;color:#5a2f0c;font-weight:900;font-size:16px;padding:9px 20px;cursor:pointer;}
+  .spellctl{display:inline-block;margin:14px 6px 0;border:2px solid #70431f;border-radius:12px;background:#fff;color:#5a2f0c;font-weight:900;font-size:16px;padding:9px 18px;cursor:pointer;}
+  .spellctl.hint{border-color:#3f8fde;color:#1f5f9e;background:rgba(63,143,222,.08);}
+  .spelltip{margin:12px auto 0;max-width:420px;padding:10px 14px;border-radius:14px;background:rgba(63,143,222,.12);border:2px dashed rgba(63,143,222,.5);color:#1f4f7a;font-size:17px;font-weight:800;line-height:1.5;text-align:center;}
+  .options.spelling{text-align:center;}
   .rad{border-top:1.5px solid currentColor;padding:0 .12em;margin-left:.04em;}
   .opt sup,.question sup{font-size:.62em;}
   .mtab.active{filter:saturate(1.12) brightness(1.08);box-shadow:0 5px 0 #d49b35,0 0 0 3px #fff1a3,inset 0 0 0 2px rgba(255,255,255,.24);}
@@ -2411,7 +2414,15 @@ function renderSpell(){
   G.q.tiles.forEach((ch,i)=>{ const b=document.createElement('button'); b.className='tile'; b.dataset.i=i; b.textContent=ch; b.onclick=()=>spellTap(i,b); tiles.appendChild(b); });
   box.appendChild(tiles);
   const ctl=document.createElement('button'); ctl.className='spellctl'; ctl.textContent='⌫ 刪除'; ctl.onclick=spellBack; box.appendChild(ctl);
+  const hintBtn=document.createElement('button'); hintBtn.className='spellctl hint'; hintBtn.textContent='💡 看記法'; hintBtn.onclick=spellHint; box.appendChild(hintBtn);
+  const tip=document.createElement('div'); tip.className='spelltip'; tip.id='spellTip'; tip.style.display='none'; box.appendChild(tip);
   renderSpellSlots();
+}
+function spellHint(){
+  const t=$('#spellTip'); if(!t) return;
+  t.textContent='💡 '+(G.q.tip||'');
+  t.style.display='';
+  speakWord(G.q.answer);
 }
 
 
