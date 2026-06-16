@@ -115,6 +115,7 @@
   .mtab[data-mode="geo"]{background:linear-gradient(150deg,rgba(90,120,200,.9),rgba(40,60,130,.92));}
   .mtab[data-mode="alg7"]{background:linear-gradient(150deg,rgba(70,160,120,.9),rgba(28,96,80,.93));}
   .mtab[data-mode="alg8"]{background:linear-gradient(150deg,rgba(150,110,210,.9),rgba(70,40,130,.93));}
+  .mtab[data-mode="alg9"]{background:linear-gradient(150deg,rgba(210,90,110,.92),rgba(130,30,50,.93));}
   .rad{border-top:1.5px solid currentColor;padding:0 .12em;margin-left:.04em;}
   .opt sup,.question sup{font-size:.62em;}
   .mtab.active{filter:saturate(1.12) brightness(1.08);box-shadow:0 5px 0 #d49b35,0 0 0 3px #fff1a3,inset 0 0 0 2px rgba(255,255,255,.24);}
@@ -403,6 +404,7 @@
         <button class="mtab" data-mode="geo"><span class="chapter-icon ui-mark">形</span><span class="chapter-name">圖形計算</span><span class="chapter-place">三~六年級</span></button>
         <button class="mtab" data-mode="alg7"><span class="chapter-icon ui-mark">x</span><span class="chapter-name">國一代數</span><span class="chapter-place">七年級</span></button>
         <button class="mtab" data-mode="alg8"><span class="chapter-icon ui-mark">x²</span><span class="chapter-name">國二代數</span><span class="chapter-place">八年級</span></button>
+        <button class="mtab" data-mode="alg9"><span class="chapter-icon ui-mark">九</span><span class="chapter-name">國三進階</span><span class="chapter-place">九年級</span></button>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <strong style="font-size:17px;">選擇關卡</strong>
@@ -581,6 +583,14 @@ const STAGE_SETS = {
     {id:'b4', type:'a8_sqrt', name:'平方根'},
     {id:'b5', type:'a8_pyth', name:'畢氏定理'},
     {id:'b6', type:'a8_quad', name:'一元二次方程式', special:true},
+  ],
+  alg9: [
+    {id:'c1', type:'a9_prob', name:'機率'},
+    {id:'c2', type:'a9_stat', name:'統計量（中位/眾數/全距）'},
+    {id:'c3', type:'a9_similar', name:'相似形（邊長比）'},
+    {id:'c4', type:'a9_qfunc', name:'二次函數（頂點/對稱軸）', special:true},
+    {id:'c5', type:'a9_vieta', name:'根與係數關係', special:true},
+    {id:'c6', type:'a9_disc', name:'判別式', special:true},
   ],
 };
 let curMode = 'mult';
@@ -803,6 +813,7 @@ function stageIcon(stage){
   if(stage.type && stage.type.indexOf('geo_')===0) return '形';
   if(stage.type && stage.type.indexOf('alg_')===0) return 'x';
   if(stage.type && stage.type.indexOf('a8_')===0) return 'x²';
+  if(stage.type && stage.type.indexOf('a9_')===0) return '九';
   return stage.n || '×';
 }
 
@@ -1634,6 +1645,86 @@ function makeAlg8Question(stage){
   return q;
 }
 
+/* ===================== 國三 進階（機率/統計/相似/二次/判別式） ===================== */
+function genProb(){
+  if(rnd(0,1)===0){ const r=rnd(1,6), b=rnd(1,6), tot=r+b; const ans=fracCanon(r,tot);
+    return { text:advText(`袋子裡有 ${r} 顆紅球、${b} 顆藍球，隨機取一顆。`,'是紅球的機率 = ?'), sub:'',
+      options:strOptions(ans,[fracCanon(b,tot),fracCanon(r,b),fracCanon(1,tot)].filter(x=>x!==ans)), answer:ans, key:`a9:prob:bag:${r}:${b}`, review:`${r}/${tot}`,
+      steps:[`機率 = 紅球數 ÷ 總數`, `${r} ÷ ${tot} = ${frac(r,tot)}`+(gcd(r,tot)>1?` = ${fracHTML(ans)}`:'')] };
+  }
+  const events=[['出現偶數',3],['出現奇數',3],['點數大於 4',2],['點數小於 3',2],['點數等於 6',1],['點數至少 5',2]];
+  const ev=events[rnd(0,events.length-1)], num=ev[1], ans=fracCanon(num,6);
+  return { text:advText(`擲一顆公正骰子，${ev[0]}的機率 = ?`,''), sub:'',
+    options:strOptions(ans,[fracCanon(6-num,6),fracCanon(num+1,6),fracCanon(num,5)].filter(x=>x&&x!==ans)), answer:ans, key:`a9:prob:dice:${ev[0]}`, review:`${num}/6`,
+    steps:[`公正骰子共 6 種結果`, `符合的有 ${num} 種 → ${frac(num,6)}`+(gcd(num,6)>1?` = ${fracHTML(ans)}`:'')] };
+}
+function genStat(){
+  const statQ=(data,ask,ans,dist,k,steps)=>({ text:advText(`資料：${data.join('、')}`,ask), sub:'', options:wordOptions(ans,dist), answer:String(ans), key:`a9:stat:${k}:${data.join('_')}`, review:`${k}=${ans}`, steps });
+  const t=rnd(0,3);
+  if(t===0){ const data=[]; for(let i=0;i<5;i++) data.push(rnd(1,20)); const mx=Math.max(...data), mn=Math.min(...data), ans=mx-mn;
+    return statQ(data,'全距（最大 − 最小）= ?',ans,[mx+mn,mx,ans+1],'range',[`全距 = 最大 ${mx} − 最小 ${mn} = ${ans}`]); }
+  if(t===1){ const data=[]; for(let i=0;i<5;i++) data.push(rnd(1,20)); const s=[...data].sort((a,b)=>a-b), ans=s[2];
+    return statQ(data,'中位數 = ?',ans,[s[0],s[4],Math.round(data.reduce((p,c)=>p+c,0)/5)],'median',[`由小到大排序取中間那個`, `${s.join('、')} → 中位數 ${ans}`]); }
+  if(t===2){ const v=rnd(1,20), data=[v,v]; const used=new Set([v]); for(let i=2;i<5;i++){ let x; do{x=rnd(1,20);}while(used.has(x)); used.add(x); data.push(x); } shuffle(data);
+    return statQ(data,'眾數 = ?',v,[data.find(d=>d!==v),Math.max(...data),Math.min(...data)],'mode',[`出現最多次的數`, `${v} 出現 2 次 → 眾數 ${v}`]); }
+  const data=[]; for(let i=0;i<5;i++) data.push(rnd(1,19)); let sum=data.reduce((p,c)=>p+c,0); const add=(5-(sum%5))%5; data[4]+=add; sum+=add; const ans=sum/5;
+  return statQ(data,'平均數 = ?',ans,[Math.max(...data),[...data].sort((a,b)=>a-b)[2],ans+1],'mean',[`平均 = 總和 ÷ 個數`, `${sum} ÷ 5 = ${ans}`]);
+}
+function genSimilar(){
+  let a=rnd(2,4), b=rnd(a+1,6); while(gcd(a,b)!==1){ a=rnd(2,4); b=rnd(a+1,6); }
+  const k=rnd(2,6), s=a*k, big=b*k;
+  return { text:advText(`兩個相似三角形的相似比是 ${a} : ${b}。較小邊 ${s} 對應的另一邊 = ?`,''), sub:'',
+    options:wordOptions(big,[s*b,s+(b-a),Math.round(s*a/b),big+1]), answer:String(big), key:`a9:sim:${a}:${b}:${k}`, review:`${s}×${b}/${a}=${big}`,
+    steps:[`對應邊成比例：邊 × ${b} ÷ ${a}`, `${s} × ${b} ÷ ${a} = ${big}`] };
+}
+function genQuadFunc(){
+  let h=rnd(-5,5); if(h===0) h=2; let k=rnd(-9,9); if(k===0) k=3;
+  const main=`y = (x ${h<0?'+ ':'− '}${Math.abs(h)})^2 ${k<0?'− ':'+ '}${Math.abs(k)}`;
+  const t=rnd(0,2);
+  if(t===0){ const ans=`(${numStr(h)}, ${numStr(k)})`;
+    return { text:advText(main,'頂點坐標 = ?'), sub:'', options:strOptions(ans,[`(${numStr(-h)}, ${numStr(k)})`,`(${numStr(h)}, ${numStr(-k)})`,`(${numStr(k)}, ${numStr(h)})`]), answer:ans, key:`a9:qf:v:${h}:${k}`, review:main,
+      steps:[`頂點式 y = (x − h)² + k，頂點為 (h, k)`, `頂點 = (${numStr(h)}, ${numStr(k)})`] };
+  }
+  if(t===1){ const ans=`x = ${numStr(h)}`;
+    return { text:advText(main,'對稱軸 = ?'), sub:'', options:strOptions(ans,[`x = ${numStr(-h)}`,`x = ${numStr(k)}`,`y = ${numStr(h)}`]), answer:ans, key:`a9:qf:a:${h}:${k}`, review:main,
+      steps:[`對稱軸為 x = h`, `x = ${numStr(h)}`] };
+  }
+  return { text:advText(main,'最小值 = ?'), sub:'', options:intOptions(k,[h,-k,k+1,k-1]), answer:numStr(k), key:`a9:qf:m:${h}:${k}`, review:main,
+    steps:[`開口向上，最小值就是頂點的 y 值`, `最小值 = ${numStr(k)}`] };
+}
+function genVieta(){
+  let r1=rnd(-6,6), r2=rnd(-6,6); while(r1+r2===0||r1*r2===0){ r1=rnd(-6,6); r2=rnd(-6,6); }
+  const b=-(r1+r2), c=r1*r2, T=n=>`${n<0?'− ':'+ '}${Math.abs(n)}`, main=`x^2 ${T(b)}x ${T(c)} = 0`;
+  if(rnd(0,1)===0){ const ans=r1+r2;
+    return { text:advText(main,'兩根之和 = ?'), sub:'', options:intOptions(ans,[-ans,c,-c,ans+1]), answer:numStr(ans), key:`a9:vsum:${r1}:${r2}`, review:`和=${ans}`,
+      steps:[`兩根之和 = −b（a = 1）`, `= −(${numStr(b)}) = ${numStr(ans)}`] };
+  }
+  const ans=r1*r2;
+  return { text:advText(main,'兩根之積 = ?'), sub:'', options:intOptions(ans,[-ans,r1+r2,-(r1+r2),ans+1]), answer:numStr(ans), key:`a9:vprod:${r1}:${r2}`, review:`積=${ans}`,
+    steps:[`兩根之積 = c（a = 1）`, `= ${numStr(ans)}`] };
+}
+function genDisc(){
+  const T=n=>`${n<0?'− ':'+ '}${Math.abs(n)}`;
+  let b=rnd(-8,8); if(b===0) b=2; let c=rnd(-8,8); if(c===0) c=3;
+  const D=b*b-4*c, main=`x^2 ${T(b)}x ${T(c)} = 0`;
+  if(rnd(0,1)===0){
+    return { text:advText(main,'判別式 b²−4ac = ?'), sub:'', options:intOptions(D,[b*b+4*c,b*b,-D,D+1]), answer:numStr(D), key:`a9:discv:${b}:${c}`, review:`D=${D}`,
+      steps:[`判別式 = b² − 4ac`, `(${numStr(b)})² − 4×(${numStr(c)}) = ${numStr(D)}`] };
+  }
+  const ans=D>0?'兩相異實根':(D===0?'兩相等實根（重根）':'沒有實數根');
+  return { text:advText(main,'根的情形是？'), sub:'', options:strOptions(ans,['兩相異實根','兩相等實根（重根）','沒有實數根'].filter(x=>x!==ans)), answer:ans, key:`a9:discn:${b}:${c}`, review:`D=${D}`,
+    steps:[`判別式 D = b² − 4ac = ${numStr(D)}`, D>0?'D > 0 → 兩相異實根':(D===0?'D = 0 → 重根':'D < 0 → 沒有實數根')] };
+}
+function makeAlg9Question(stage){
+  const gens={a9_prob:genProb,a9_stat:genStat,a9_similar:genSimilar,a9_qfunc:genQuadFunc,a9_vieta:genVieta,a9_disc:genDisc};
+  const gen=gens[stage.type]||genProb;
+  let q=null;
+  for(let i=0;i<24;i++){ q=gen(); if(q && !(G && G.recentKeys && G.recentKeys.includes(q.key))) break; }
+  if(!q) q=gen();
+  if(G && q){ G.recentKeys=G.recentKeys||[]; G.recentKeys.push(q.key); while(G.recentKeys.length>40) G.recentKeys.shift(); G.lastBand=null; }
+  return q;
+}
+
 function makeQuestion(stage){
   if(stage.type==='review'){
     const weak=weakCandidates();
@@ -1665,6 +1756,7 @@ function makeQuestion(stage){
   if(stage.type.indexOf('geo_')===0) return makeGeoQuestion(stage);
   if(stage.type.indexOf('alg_')===0) return makeAlgQuestion(stage);
   if(stage.type.indexOf('a8_')===0) return makeAlg8Question(stage);
+  if(stage.type.indexOf('a9_')===0) return makeAlg9Question(stage);
   if(['unit1','unit2','round','mixops','factor','average','speed','percent','ratio'].includes(stage.type)) return makeAdvQuestion(stage);
   if(stage.type==='allmix') return questionFromCandidate(pickNext(allMixCandidates(stage)));
   if(stage.type==='division') return questionFromCandidate(pickNext(divisionCandidates(stage)));
