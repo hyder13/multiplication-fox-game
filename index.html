@@ -110,6 +110,7 @@
   .mtab[data-mode="addsub"]{background:linear-gradient(180deg,rgba(214,109,54,.1),rgba(111,50,22,.72)),url("chapter-addsub.webp") center/cover;}
   .mtab[data-mode="div"]{background:linear-gradient(180deg,rgba(61,111,191,.08),rgba(20,54,101,.72)),url("chapter-div.webp") center/cover;}
   .mtab[data-mode="all"]{background:linear-gradient(150deg,rgba(150,86,176,.86),rgba(72,44,120,.92));}
+  .mtab[data-mode="adv"]{background:linear-gradient(150deg,rgba(38,150,140,.88),rgba(18,84,86,.92));}
   .mtab.active{filter:saturate(1.12) brightness(1.08);box-shadow:0 5px 0 #d49b35,0 0 0 3px #fff1a3,inset 0 0 0 2px rgba(255,255,255,.24);}
   .mtab:active{transform:scale(.97);}
   .stages{
@@ -319,7 +320,7 @@
     .mascot{font-size:86px;}
     .title #homeMascot{width:268px;height:248px;margin-bottom:-4px;}
     .panel{border-radius:30px;padding:24px;}
-    .modetabs{padding:8px;gap:10px;grid-template-columns:repeat(4,1fr);} .mtab{font-size:20px;padding:17px 12px 16px;min-height:122px;}
+    .modetabs{padding:8px;gap:10px;grid-template-columns:repeat(5,1fr);} .mtab{font-size:20px;padding:17px 12px 16px;min-height:122px;}
     .mtab .chapter-icon{font-size:34px;margin-bottom:4px;}
     .mtab .chapter-name{font-size:21px;}
     .mtab .chapter-place{font-size:15px;}
@@ -384,6 +385,7 @@
         <button class="mtab" data-mode="addsub"><span class="chapter-icon ui-mark">+ −</span><span class="chapter-name">加減村莊</span><span class="chapter-place">心算任務</span></button>
         <button class="mtab" data-mode="div"><span class="chapter-icon ui-mark">÷</span><span class="chapter-name">除法山谷</span><span class="chapter-place">小三挑戰</span></button>
         <button class="mtab" data-mode="all"><span class="chapter-icon ui-mark">±×÷</span><span class="chapter-name">全能綜合</span><span class="chapter-place">四則挑戰</span></button>
+        <button class="mtab" data-mode="adv"><span class="chapter-icon ui-mark">進</span><span class="chapter-name">進階挑戰</span><span class="chapter-place">三~六年級</span></button>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <strong style="font-size:17px;">選擇關卡</strong>
@@ -516,6 +518,17 @@ const STAGE_SETS = {
     {id:'x2', type:'allmix', ops:['add','sub','mul'], name:'加減乘綜合'},
     {id:'x3', type:'allmix', ops:['add','sub','mul','div'], name:'加減乘除綜合', special:true},
     {id:'x4', type:'word', name:'生活應用題（兩段式）', special:true},
+  ],
+  adv: [
+    {id:'v1', type:'unit1', name:'單位換算・入門'},
+    {id:'v2', type:'round', name:'概數與估算'},
+    {id:'v3', type:'mixops', name:'四則混合・含括號'},
+    {id:'v4', type:'unit2', name:'單位換算・進階'},
+    {id:'v5', type:'factor', name:'因數與倍數'},
+    {id:'v6', type:'average', name:'平均數'},
+    {id:'v7', type:'speed', name:'速率'},
+    {id:'v8', type:'percent', name:'百分率與折扣', special:true},
+    {id:'v9', type:'ratio', name:'比與比值（化簡比）', special:true},
   ],
 };
 let curMode = 'mult';
@@ -726,6 +739,14 @@ function stageIcon(stage){
   if(stage.type==='remainder') return 'R';
   if(stage.type==='allmix') return '✦';
   if(stage.type==='word') return '題';
+  if(stage.type==='unit1'||stage.type==='unit2') return '⇄';
+  if(stage.type==='round') return '≈';
+  if(stage.type==='mixops') return '()';
+  if(stage.type==='factor') return '因';
+  if(stage.type==='average') return '平';
+  if(stage.type==='speed') return '速';
+  if(stage.type==='percent') return '%';
+  if(stage.type==='ratio') return ':';
   return stage.n || '×';
 }
 
@@ -1000,6 +1021,171 @@ function makeWordQuestion(){
   return { text, sub:'', options:wordOptions(c.answer, c.specials), answer:String(c.answer), key:c.key, review:c.review, steps:c.steps };
 }
 
+/* ===================== 進階挑戰（三~六年級・依課綱） ===================== */
+function gcd(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){ [a,b]=[b,a%b]; } return a||1; }
+function advText(main, ask){ return `<span class="wordq">${main}${ask?`<span class="ask">${ask}</span>`:''}</span>`; }
+function strOptions(answer, cands){
+  const opts=new Set([answer]);
+  for(const d of (cands||[])){ if(opts.size>=4) break; if(d && d!==answer) opts.add(d); }
+  return shuffle([...opts]);
+}
+// S1 單位換算·入門
+function genUnit1(){
+  const C=[
+    {f:100,a:'公尺',b:'公分',max:9},{f:10,a:'公分',b:'毫米',max:30},
+    {f:1000,a:'公斤',b:'公克',max:9},{f:1000,a:'公升',b:'毫升',max:9},
+    {f:60,a:'小時',b:'分',max:9},{f:60,a:'分',b:'秒',max:9},
+    {f:24,a:'日',b:'小時',max:9},{f:7,a:'週',b:'日',max:8},
+  ];
+  const c=C[rnd(0,C.length-1)], n=rnd(2,c.max), ans=n*c.f;
+  return { text:advText(`${n} ${c.a}`, `= ? ${c.b}`), sub:'',
+    options:wordOptions(ans,[n, n+c.f, ans*10, Math.floor(ans/10)]),
+    answer:String(ans), key:`adv:u1:${c.a}${c.b}:${n}`, review:`${n}${c.a}=${ans}${c.b}` };
+}
+// S2 概數與估算
+function genRound(){
+  const t=rnd(0,2);
+  if(t===0){
+    const place=[10,100,1000][rnd(0,2)];
+    const num=rnd(place*3, place*99+place-1);
+    const ans=Math.round(num/place)*place;
+    const pname={10:'十位',100:'百位',1000:'千位'}[place];
+    return { text:advText(`${num}`, `四捨五入到${pname} ≈ ?`), sub:'',
+      options:wordOptions(ans,[Math.floor(num/place)*place, Math.ceil(num/place)*place, ans+place, ans-place]),
+      answer:String(ans), key:`adv:round:${num}:${place}`, review:`${num}≈${ans}（${pname}）` };
+  }
+  if(t===1){
+    const per=rnd(8,15), boxes=rnd(2,8), need=per*(boxes-1)+rnd(1,per-1);
+    const base=Math.floor(need/per), r=need%per, ans=base+1;
+    return { text:advText(`${need} 瓶飲料，每箱可裝 ${per} 瓶。`, '至少要幾箱才裝得完？'), sub:'',
+      options:wordOptions(ans,[base, ans+1, base-1, need-per]),
+      answer:String(ans), key:`adv:ceil:${need}:${per}`, review:`${need}÷${per}進位=${ans}`,
+      steps:[`先算裝得滿幾箱：${need} ÷ ${per} = ${base} 餘 ${r}`, `剩下的 ${r} 瓶也要一箱：${base} + 1 = ${ans}`] };
+  }
+  const price=rnd(8,30), cnt=rnd(2,9), money=price*cnt+rnd(1,price-1);
+  const ans=Math.floor(money/price), r=money%price;
+  return { text:advText(`有 ${money} 元，一個 ${price} 元。`, '最多能買幾個？'), sub:'',
+    options:wordOptions(ans,[ans+1, Math.ceil(money/price), ans-1, money-price]),
+    answer:String(ans), key:`adv:floor:${money}:${price}`, review:`${money}÷${price}捨去=${ans}`,
+    steps:[`先算夠買幾個：${money} ÷ ${price} = ${ans} 餘 ${r}`, `剩 ${r} 元不夠再買一個 → ${ans} 個`] };
+}
+// S3 整數四則混合·含括號（純算式）
+function genMixops(){
+  const M='−';
+  const mk=(expr,ans,sp,steps,rev)=>({ text:advText(expr,'= ?'), sub:'', options:wordOptions(ans,sp), answer:String(ans), key:`adv:mix:${rev}`, review:rev, steps });
+  const B=[
+    ()=>{const a=rnd(2,9),b=rnd(2,9),c=rnd(2,9);return mk(`${a} + ${b} × ${c}`,a+b*c,[(a+b)*c,a+b+c,b*c],[`先乘：${b} × ${c} = ${b*c}`,`再加：${a} + ${b*c} = ${a+b*c}`],`${a}+${b}x${c}`);},
+    ()=>{const b=rnd(2,9),c=rnd(2,9),p=b*c,a=p+rnd(1,20);return mk(`${a} ${M} ${b} × ${c}`,a-p,[(a-b)*c,a-b-c,p],[`先乘：${b} × ${c} = ${p}`,`再減：${a} ${M} ${p} = ${a-p}`],`${a}-${b}x${c}`);},
+    ()=>{const a=rnd(2,9),b=rnd(2,9),c=rnd(2,9);return mk(`${a} × ${b} + ${c}`,a*b+c,[a*(b+c),a+b+c,b+c],[`先乘：${a} × ${b} = ${a*b}`,`再加：${a*b} + ${c} = ${a*b+c}`],`${a}x${b}+${c}`);},
+    ()=>{const a=rnd(2,9),b=rnd(2,9),p=a*b,c=rnd(1,p-1);return mk(`${a} × ${b} ${M} ${c}`,p-c,[p+c,a*(b-c),b+c,p],[`先乘：${a} × ${b} = ${p}`,`再減：${p} ${M} ${c} = ${p-c}`],`${a}x${b}-${c}`);},
+    ()=>{const c=rnd(2,9),q=rnd(2,9),b=c*q,a=rnd(2,9);return mk(`${a} + ${b} ÷ ${c}`,a+q,[Math.round((a+b)/c),a+b,q],[`先除：${b} ÷ ${c} = ${q}`,`再加：${a} + ${q} = ${a+q}`],`${a}+${b}/${c}`);},
+    ()=>{const a=rnd(2,9),b=rnd(2,9),c=rnd(2,9);return mk(`(${a} + ${b}) × ${c}`,(a+b)*c,[a+b*c,a+b+c,a+b],[`先算括號：${a} + ${b} = ${a+b}`,`再乘：${a+b} × ${c} = ${(a+b)*c}`],`(${a}+${b})x${c}`);},
+    ()=>{const b=rnd(2,8),a=rnd(b+1,9),c=rnd(2,9);return mk(`(${a} ${M} ${b}) × ${c}`,(a-b)*c,[a-b*c,a-b,a*c-b],[`先算括號：${a} ${M} ${b} = ${a-b}`,`再乘：${a-b} × ${c} = ${(a-b)*c}`],`(${a}-${b})x${c}`);},
+    ()=>{const c=rnd(2,6),s=c*rnd(2,6),a=rnd(1,s-1),b=s-a;return mk(`(${a} + ${b}) ÷ ${c}`,s/c,[a+Math.round(b/c),a+b,c],[`先算括號：${a} + ${b} = ${s}`,`再除：${s} ÷ ${c} = ${s/c}`],`(${a}+${b})/${c}`);},
+  ];
+  return B[rnd(0,B.length-1)]();
+}
+// S4 單位換算·進階（複名數）
+function genUnit2(){
+  const t=rnd(0,4);
+  const f=(main,ask,ans,sp,k)=>({ text:advText(main,ask), sub:'', options:wordOptions(ans,sp), answer:String(ans), key:`adv:u2:${k}`, review:`${main}=${ans}` });
+  if(t===0){const m=rnd(1,9),cm=rnd(1,99),ans=m*100+cm;return f(`${m} 公尺 ${cm} 公分`,'= ? 公分',ans,[m*100,cm,m*10+cm,m+cm],`m${m}_${cm}`);}
+  if(t===1){const kg=rnd(1,9),g=rnd(1,9)*100+rnd(0,9)*10,ans=kg*1000+g;return f(`${kg} 公斤 ${g} 公克`,'= ? 公克',ans,[kg*1000,g,kg*100+g,kg+g],`kg${kg}_${g}`);}
+  if(t===2){const L=rnd(1,9),ml=rnd(1,9)*100,ans=L*1000+ml;return f(`${L} 公升 ${ml} 毫升`,'= ? 毫升',ans,[L*1000,ml,L*100+ml,L+ml],`L${L}_${ml}`);}
+  if(t===3){const h=rnd(1,9),mm=rnd(1,59),ans=h*60+mm;return f(`${h} 小時 ${mm} 分`,'= ? 分',ans,[h*100+mm,h*60,mm,h+mm],`h${h}_${mm}`);}
+  const total=rnd(61,540), h=Math.floor(total/60), mm=total%60, ans=`${h} 小時 ${mm} 分`;
+  return { text:advText(`${total} 分`,'= ? 小時 ? 分'), sub:'',
+    options:strOptions(ans,[`${mm} 小時 ${h} 分`, `${h+1} 小時 ${mm} 分`, `${h} 小時 ${(mm+10)%60} 分`, `${h} 小時 ${(mm+30)%60} 分`]),
+    answer:ans, key:`adv:u2r:${total}`, review:`${total}分=${ans}` };
+}
+// S5 因數與倍數
+function genFactor(){
+  const t=rnd(0,3);
+  const smaller=g=>{ for(let d=Math.floor(g/2);d>=2;d--){ if(g%d===0) return d; } return 1; };
+  const fpure=(main,ans,sp,k)=>({ text:advText(main,''), sub:'', options:wordOptions(ans,sp), answer:String(ans), key:`adv:fac:${k}`, review:`${k}=${ans}` });
+  if(t<=1){ const a=rnd(4,40), b=rnd(4,40), g=gcd(a,b), l=a*b/g;
+    if(t===0) return fpure(`${a} 和 ${b} 的最大公因數 = ?`, g, [l,a,b,smaller(g)], `gcd(${a},${b})`);
+    return fpure(`${a} 和 ${b} 的最小公倍數 = ?`, l, [g,a*b,a,b], `lcm(${a},${b})`);
+  }
+  if(t===2){ const a=rnd(4,36), b=rnd(4,36), g=gcd(a,b);
+    return { text:advText(`兩條緞帶長 ${a} 公分和 ${b} 公分，要剪成一樣長且最長。`,'每段最長幾公分？'), sub:'',
+      options:wordOptions(g,[a*b/g,a,b,g+1]), answer:String(g), key:`adv:hcfapp:${a}:${b}`, review:`gcd(${a},${b})=${g}`,
+      steps:[`「一樣長且最長」就是求最大公因數`, `${a} 和 ${b} 的最大公因數 = ${g}`] };
+  }
+  const x=rnd(3,8), y=rnd(3,9), lc=x*y/gcd(x,y);
+  return { text:advText(`A 車每 ${x} 分、B 車每 ${y} 分發車，現在同時發車。`,'幾分鐘後會再次同時發車？'), sub:'',
+    options:wordOptions(lc,[gcd(x,y),x*y,x+y,lc+1]), answer:String(lc), key:`adv:lcmapp:${x}:${y}`, review:`lcm(${x},${y})=${lc}`,
+    steps:[`「再次同時」就是求最小公倍數`, `${x} 和 ${y} 的最小公倍數 = ${lc}`] };
+}
+// S6 平均數
+function genAverage(){
+  if(rnd(0,1)===0){
+    const k=rnd(3,5); let nums=[], sum=0, avg=0, tries=0;
+    do{ avg=rnd(60,90); nums=[]; let s=0; for(let i=0;i<k-1;i++){ const v=avg+rnd(-12,12); nums.push(v); s+=v; } nums.push(avg*k-s); sum=avg*k; tries++; }
+    while(tries<60 && nums.some(v=>v<40||v>100));
+    return { text:advText(`小考成績：${nums.join('、')} 分。`,'平均是幾分？'), sub:'',
+      options:wordOptions(avg,[sum,avg+1,avg-1,Math.round(sum/(k-1))]), answer:String(avg), key:`adv:avg:${nums.join('_')}`, review:`平均=${avg}`,
+      steps:[`先加總：${nums.join(' + ')} = ${sum}`, `再除以 ${k}：${sum} ÷ ${k} = ${avg}`] };
+  }
+  const k=rnd(3,5), avg=rnd(60,95), total=avg*k;
+  return { text:advText(`${k} 科平均 ${avg} 分。`,'總分是多少？'), sub:'',
+    options:wordOptions(total,[avg,avg+k,total-avg,total+avg]), answer:String(total), key:`adv:avgT:${k}:${avg}`, review:`${avg}×${k}=${total}`,
+    steps:[`總分 = 平均 × 科目數`, `${avg} × ${k} = ${total}`] };
+}
+// S7 速率
+function genSpeed(){
+  const f=(main,ask,ans,sp,steps,k)=>({ text:advText(main,ask), sub:'', options:wordOptions(ans,sp), answer:String(ans), key:`adv:${k}`, review:k, steps });
+  const t=rnd(0,2);
+  if(t===0){const time=rnd(2,6),speed=rnd(20,90),dist=speed*time;
+    return f(`汽車 ${time} 小時行駛 ${dist} 公里。`,'時速幾公里？',speed,[dist,dist*time,Math.round(dist/(time+1)),speed+time],[`時速 = 路程 ÷ 時間`,`${dist} ÷ ${time} = ${speed}`],`spd:${dist}:${time}`);}
+  if(t===1){const speed=rnd(30,90),time=rnd(2,6),dist=speed*time;
+    return f(`時速 ${speed} 公里，行駛 ${time} 小時。`,'共走多少公里？',dist,[speed+time,speed,dist+speed,Math.round(dist/2)],[`路程 = 速率 × 時間`,`${speed} × ${time} = ${dist}`],`dst:${speed}:${time}`);}
+  const speed=rnd(20,80),time=rnd(2,6),dist=speed*time;
+  return f(`一段 ${dist} 公里的路，時速 ${speed} 公里。`,'要開幾小時？',time,[dist,dist-speed,time+1,speed],[`時間 = 路程 ÷ 速率`,`${dist} ÷ ${speed} = ${time}`],`tim:${dist}:${speed}`);
+}
+// S8 百分率・折扣/成數
+function genPercent(){
+  const t=rnd(0,2);
+  if(t===0){
+    const ps=[5,10,15,20,25,50]; let N=0,p=0,ans=0,tries=0;
+    do{ p=ps[rnd(0,ps.length-1)]; N=rnd(2,40)*10; ans=N*p/100; tries++; }while(tries<40 && !Number.isInteger(ans));
+    return { text:advText(`${N} 元的 ${p}%`,'是多少元？'), sub:'',
+      options:wordOptions(ans,[N-ans,Math.round(N*p/10),N,p]), answer:String(ans), key:`adv:pct:${N}:${p}`, review:`${N}的${p}%=${ans}`,
+      steps:[`${p}% = ${p}/100`,`${N} × ${p} ÷ 100 = ${ans}`] };
+  }
+  const fold=[5,6,7,8,9][rnd(0,4)]; let price=0,pay=0,tries=0;
+  do{ price=rnd(10,90)*10; pay=price*fold/10; tries++; }while(tries<40 && !Number.isInteger(pay));
+  if(t===1){
+    return { text:advText(`一件 ${price} 元，打 ${fold} 折。`,'要付多少元？'), sub:'',
+      options:wordOptions(pay,[price-pay, price*(10-fold)/10, price, pay+10]), answer:String(pay), key:`adv:disc:${price}:${fold}`, review:`${price}打${fold}折=${pay}`,
+      steps:[`打 ${fold} 折 = 付十分之 ${fold}`,`${price} ÷ 10 × ${fold} = ${pay}`] };
+  }
+  const save=price-pay;
+  return { text:advText(`一件 ${price} 元，打 ${fold} 折。`,'省下多少元？'), sub:'',
+    options:wordOptions(save,[pay, price, price*fold/10, save+10]), answer:String(save), key:`adv:save:${price}:${fold}`, review:`省=${save}`,
+    steps:[`要付：${price} ÷ 10 × ${fold} = ${pay}`,`省下：${price} − ${pay} = ${save}`] };
+}
+// S9 比與比值（化簡比）
+function genRatio(){
+  let x=rnd(2,9), y=rnd(2,9), tries=0;
+  while(tries<40 && (x===y || gcd(x,y)!==1)){ x=rnd(2,9); y=rnd(2,9); tries++; }
+  const g0=gcd(x,y); x/=g0; y/=g0;
+  const m=rnd(2,6), a=x*m, b=y*m, g=gcd(a,b), ans=`${x} : ${y}`;
+  return { text:advText(`${a} : ${b}`,'化成最簡單整數比 = ?'), sub:'',
+    options:strOptions(ans,[`${y} : ${x}`, `${a} : ${b}`, `${x+1} : ${y}`, `${x} : ${y+1}`]),
+    answer:ans, key:`adv:ratio:${a}:${b}`, review:`${a}:${b}→${ans}`,
+    steps:[`先求最大公因數：${a} 和 ${b} 的最大公因數是 ${g}`, `同除以 ${g}：${a}÷${g} = ${x}，${b}÷${g} = ${y} → ${x} : ${y}`] };
+}
+function makeAdvQuestion(stage){
+  const gens={unit1:genUnit1,unit2:genUnit2,round:genRound,mixops:genMixops,factor:genFactor,average:genAverage,speed:genSpeed,percent:genPercent,ratio:genRatio};
+  const gen=gens[stage.type]||genMixops;
+  let q=null;
+  for(let i=0;i<24;i++){ q=gen(); if(q && !(G && G.recentKeys && G.recentKeys.includes(q.key))) break; }
+  if(!q) q=gen();
+  if(G && q){ G.recentKeys=G.recentKeys||[]; G.recentKeys.push(q.key); while(G.recentKeys.length>40) G.recentKeys.shift(); G.lastBand=null; }
+  return q;
+}
+
 function makeQuestion(stage){
   if(stage.type==='review'){
     const weak=weakCandidates();
@@ -1027,6 +1213,7 @@ function makeQuestion(stage){
     return { text:`${q.a} ${q.op} ${q.b}`, sub:'= ?', options:numberOptions(q.ans,deltas), answer:String(q.ans), key:q.key, review:`${q.a} ${q.op} ${q.b}` };
   }
   if(stage.type==='word') return makeWordQuestion();
+  if(['unit1','unit2','round','mixops','factor','average','speed','percent','ratio'].includes(stage.type)) return makeAdvQuestion(stage);
   if(stage.type==='allmix') return questionFromCandidate(pickNext(allMixCandidates(stage)));
   if(stage.type==='division') return questionFromCandidate(pickNext(divisionCandidates(stage)));
   if(stage.type==='remainder') return questionFromCandidate(pickNext(remainderCandidates(stage)));
