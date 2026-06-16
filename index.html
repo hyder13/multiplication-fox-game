@@ -849,6 +849,7 @@ function stageIcon(stage){
   if(stage.type && stage.type.indexOf('a8_')===0) return 'x²';
   if(stage.type && stage.type.indexOf('a9_')===0) return '九';
   if(stage.type==='eng') return 'A';
+  if(stage.type==='engspell') return '拼';
   return stage.n || '×';
 }
 
@@ -1804,14 +1805,35 @@ function makeEngQuestion(stage){
     return { text:`<span class="wordq">${spk}<span class="ask">聽聽看，這個字是什麼意思？</span></span>`, sub:'',
       options:shuffle([zh,...others.slice(0,3).map(x=>x[1])]), answer:zh, key, review:`(聽) ${en} = ${zh}`, autoSpeak:en };
   }
-  // 拼字：點字母拼出單字
+  return buildSpellQ(en, zh, key);
+}
+function buildSpellQ(en, zh, key){
   const alpha='abcdefghijklmnopqrstuvwxyz', extra=[];
   if(en.length<=6){ while(extra.length<2){ const c=alpha[rnd(0,25)]; if(!en.includes(c)&&!extra.includes(c)) extra.push(c); } }
   const tiles=shuffle(en.split('').concat(extra));
+  const spk=`<button class="spk" onclick="speakWord('${en}')" aria-label="唸出 ${en}">🔊</button>`;
   return { spell:true, text:`<span class="wordq">${spk} <b class="zhw">${zh}</b><span class="ask">拼出英文單字（點字母）</span></span>`,
     sub:'', tiles, answer:en, key, review:`拼字 ${zh} = ${en}`, autoSpeak:en };
 }
-STAGE_SETS.eng = ENG_THEMES.map(t=>({id:'e_'+t.id, type:'eng', theme:t.id, name:t.name}));
+function spellPool(level){
+  const pool=[];
+  ENG_THEMES.forEach(t=>{ if(t.g===level) t.w.forEach(([en,zh])=>{ if(/^[a-z]+$/.test(en) && en.length<=8) pool.push([en,zh,t.id]); }); });
+  return pool;
+}
+function makeEngSpell(stage){
+  const pool=spellPool(stage.level);
+  let pick=null;
+  for(let i=0;i<24;i++){ const c=pool[rnd(0,pool.length-1)]; if(!(G && G.recentKeys && G.recentKeys.includes('spell:'+c[2]+':'+c[0]))){ pick=c; break; } }
+  if(!pick) pick=pool[rnd(0,pool.length-1)];
+  const key='spell:'+pick[2]+':'+pick[0];
+  if(G){ G.recentKeys=G.recentKeys||[]; G.recentKeys.push(key); while(G.recentKeys.length>40) G.recentKeys.shift(); G.lastBand=null; }
+  return buildSpellQ(pick[0], pick[1], key);
+}
+STAGE_SETS.eng = ENG_THEMES.map(t=>({id:'e_'+t.id, type:'eng', theme:t.id, name:t.name})).concat([
+  {id:'e_spell1', type:'engspell', level:1, name:'✏️ 拼字測驗・低年級', special:true},
+  {id:'e_spell3', type:'engspell', level:3, name:'✏️ 拼字測驗・中年級', special:true},
+  {id:'e_spell5', type:'engspell', level:5, name:'✏️ 拼字測驗・高年級', special:true},
+]);
 
 function makeQuestion(stage){
   if(stage.type==='review'){
@@ -1846,6 +1868,7 @@ function makeQuestion(stage){
   if(stage.type.indexOf('a8_')===0) return makeAlg8Question(stage);
   if(stage.type.indexOf('a9_')===0) return makeAlg9Question(stage);
   if(stage.type==='eng') return makeEngQuestion(stage);
+  if(stage.type==='engspell') return makeEngSpell(stage);
   if(['unit1','unit2','round','mixops','factor','average','speed','percent','ratio'].includes(stage.type)) return makeAdvQuestion(stage);
   if(stage.type==='allmix') return questionFromCandidate(pickNext(allMixCandidates(stage)));
   if(stage.type==='division') return questionFromCandidate(pickNext(divisionCandidates(stage)));
