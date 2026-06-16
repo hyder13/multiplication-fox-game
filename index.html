@@ -94,6 +94,12 @@
     border:4px solid #8c5a2d;border-radius:22px;padding:16px;
     box-shadow:0 9px 0 #603715,0 20px 34px rgba(47,32,15,.34),inset 0 0 0 3px rgba(255,255,255,.45);
   }
+  .gradefilter{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:10px;}
+  .gradefilter .gf-label{font-size:14px;font-weight:900;color:#5a381b;margin-right:2px;}
+  .gradefilter .gf{border:2px solid rgba(111,63,31,.3);background:rgba(255,249,221,.9);color:#5a381b;font-size:14px;font-weight:900;
+    padding:6px 12px;border-radius:999px;cursor:pointer;transition:transform .08s,filter .12s;}
+  .gradefilter .gf:active{transform:scale(.95);}
+  .gradefilter .gf.active{background:linear-gradient(180deg,#ffd76a,#f0a52e);border-color:#c9821f;color:#5a2f0c;box-shadow:0 3px 0 #b06f18;}
   .modetabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(108px,1fr));gap:8px;background:rgba(113,68,32,.16);border-radius:17px;padding:6px;margin-bottom:14px;border:2px solid rgba(93,55,23,.12);}
   .mtab{
     position:relative;min-width:0;border:3px solid rgba(91,52,22,.42);border-radius:16px;padding:12px 6px 10px;
@@ -394,17 +400,27 @@
       <p>3 分鐘衝 100 分，一關一關變高手！</p>
     </div>
     <div class="panel">
+      <div class="gradefilter" id="gradeFilter">
+        <span class="gf-label">依年級：</span>
+        <button class="gf active" data-lo="0" data-hi="9">全部</button>
+        <button class="gf" data-lo="1" data-hi="2">小一二</button>
+        <button class="gf" data-lo="3" data-hi="4">小三四</button>
+        <button class="gf" data-lo="5" data-hi="6">小五六</button>
+        <button class="gf" data-lo="7" data-hi="7">國一</button>
+        <button class="gf" data-lo="8" data-hi="8">國二</button>
+        <button class="gf" data-lo="9" data-hi="9">國三</button>
+      </div>
       <div class="modetabs">
-        <button class="mtab active" data-mode="mult"><span class="chapter-icon ui-mark">×</span><span class="chapter-name">乘法森林</span><span class="chapter-place">九九冒險</span></button>
-        <button class="mtab" data-mode="addsub"><span class="chapter-icon ui-mark">+ −</span><span class="chapter-name">加減村莊</span><span class="chapter-place">心算任務</span></button>
-        <button class="mtab" data-mode="div"><span class="chapter-icon ui-mark">÷</span><span class="chapter-name">除法山谷</span><span class="chapter-place">小三挑戰</span></button>
-        <button class="mtab" data-mode="all"><span class="chapter-icon ui-mark">±×÷</span><span class="chapter-name">全能綜合</span><span class="chapter-place">四則挑戰</span></button>
-        <button class="mtab" data-mode="adv"><span class="chapter-icon ui-mark">進</span><span class="chapter-name">進階挑戰</span><span class="chapter-place">三~六年級</span></button>
-        <button class="mtab" data-mode="frac"><span class="chapter-icon ui-mark">½</span><span class="chapter-name">分數樂園</span><span class="chapter-place">四~六年級</span></button>
-        <button class="mtab" data-mode="geo"><span class="chapter-icon ui-mark">形</span><span class="chapter-name">圖形計算</span><span class="chapter-place">三~六年級</span></button>
-        <button class="mtab" data-mode="alg7"><span class="chapter-icon ui-mark">x</span><span class="chapter-name">國一代數</span><span class="chapter-place">七年級</span></button>
-        <button class="mtab" data-mode="alg8"><span class="chapter-icon ui-mark">x²</span><span class="chapter-name">國二代數</span><span class="chapter-place">八年級</span></button>
-        <button class="mtab" data-mode="alg9"><span class="chapter-icon ui-mark">九</span><span class="chapter-name">國三進階</span><span class="chapter-place">九年級</span></button>
+        <button class="mtab active" data-mode="mult" data-glo="2" data-ghi="3"><span class="chapter-icon ui-mark">×</span><span class="chapter-name">乘法森林</span><span class="chapter-place">九九冒險</span></button>
+        <button class="mtab" data-mode="addsub" data-glo="1" data-ghi="2"><span class="chapter-icon ui-mark">+ −</span><span class="chapter-name">加減村莊</span><span class="chapter-place">心算任務</span></button>
+        <button class="mtab" data-mode="div" data-glo="3" data-ghi="4"><span class="chapter-icon ui-mark">÷</span><span class="chapter-name">除法山谷</span><span class="chapter-place">小三挑戰</span></button>
+        <button class="mtab" data-mode="all" data-glo="3" data-ghi="6"><span class="chapter-icon ui-mark">±×÷</span><span class="chapter-name">全能綜合</span><span class="chapter-place">四則挑戰</span></button>
+        <button class="mtab" data-mode="adv" data-glo="3" data-ghi="6"><span class="chapter-icon ui-mark">進</span><span class="chapter-name">進階挑戰</span><span class="chapter-place">三~六年級</span></button>
+        <button class="mtab" data-mode="frac" data-glo="4" data-ghi="6"><span class="chapter-icon ui-mark">½</span><span class="chapter-name">分數樂園</span><span class="chapter-place">四~六年級</span></button>
+        <button class="mtab" data-mode="geo" data-glo="3" data-ghi="6"><span class="chapter-icon ui-mark">形</span><span class="chapter-name">圖形計算</span><span class="chapter-place">三~六年級</span></button>
+        <button class="mtab" data-mode="alg7" data-glo="7" data-ghi="7"><span class="chapter-icon ui-mark">x</span><span class="chapter-name">國一代數</span><span class="chapter-place">七年級</span></button>
+        <button class="mtab" data-mode="alg8" data-glo="8" data-ghi="8"><span class="chapter-icon ui-mark">x²</span><span class="chapter-name">國二代數</span><span class="chapter-place">八年級</span></button>
+        <button class="mtab" data-mode="alg9" data-glo="9" data-ghi="9"><span class="chapter-icon ui-mark">九</span><span class="chapter-name">國三進階</span><span class="chapter-place">九年級</span></button>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <strong style="font-size:17px;">選擇關卡</strong>
@@ -2108,6 +2124,25 @@ function setMode(m){
   renderStages();
 }
 document.querySelectorAll('.mtab').forEach(t=>{ t.onclick=()=>{ sClick(); setMode(t.dataset.mode); }; });
+
+// 依年級篩選章節
+function applyGradeFilter(lo,hi){
+  document.querySelectorAll('.mtab').forEach(t=>{
+    const glo=+t.dataset.glo, ghi=+t.dataset.ghi;
+    t.style.display = (glo<=hi && ghi>=lo) ? '' : 'none';   // 章節年級範圍與所選範圍有重疊就顯示
+  });
+  const active=document.querySelector('.mtab.active');
+  if(!active || active.style.display==='none'){
+    const first=[...document.querySelectorAll('.mtab')].find(t=>t.style.display!=='none');
+    if(first) setMode(first.dataset.mode);
+  }
+}
+document.querySelectorAll('#gradeFilter .gf').forEach(btn=>{
+  btn.onclick=()=>{ sClick();
+    document.querySelectorAll('#gradeFilter .gf').forEach(b=>b.classList.toggle('active', b===btn));
+    applyGradeFilter(+btn.dataset.lo, +btn.dataset.hi);
+  };
+});
 
 setSoundIcon();
 setHomeMascot();
