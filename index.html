@@ -243,6 +243,15 @@
   @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-8px);}40%{transform:translateX(8px);}60%{transform:translateX(-6px);}80%{transform:translateX(6px);}}
   @keyframes scrollIn{from{opacity:0;transform:translateY(8px) scale(.98);}to{opacity:1;transform:none;}}
   @keyframes plankIn{from{opacity:0;transform:translateY(14px) scale(.96);}to{opacity:1;transform:none;}}
+  .qcard.explaining{justify-content:flex-start;overflow-y:auto;}
+  .explain{display:none;position:relative;z-index:1;margin-top:14px;padding:14px 16px;border-radius:18px;
+    background:rgba(255,252,235,.96);border:3px solid #c98a3e;box-shadow:0 5px 0 #9a6322,inset 0 0 0 2px rgba(255,255,255,.5);text-align:left;}
+  .explain.show{display:block;animation:scrollIn .3s cubic-bezier(.2,.8,.2,1) both;}
+  .explain .exp-title{font-size:15px;font-weight:900;color:#8a4f1c;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+  .explain .exp-row{font-size:19px;font-weight:800;color:#3a2410;line-height:1.7;}
+  .explain .exp-ans{margin-top:6px;font-size:20px;font-weight:900;color:#1f8a4c;}
+  .explain .cont{display:block;width:100%;margin-top:12px;}
+  @media (min-width:700px){ .explain .exp-row{font-size:23px;} .explain .exp-title{font-size:17px;} }
   .floats{position:fixed;inset:0;pointer-events:none;z-index:40;}
   .float{position:absolute;font-weight:900;font-size:26px;animation:floatup 1s ease-out forwards;text-shadow:0 2px 4px rgba(0,0,0,.2);}
   @keyframes floatup{0%{opacity:1;transform:translateY(0) scale(.8);}100%{opacity:0;transform:translateY(-80px) scale(1.3);}}
@@ -409,6 +418,7 @@
         <div class="question" id="question">—</div>
       </div>
       <div class="options" id="options"></div>
+      <div class="explain" id="explain"></div>
     </div>
   </section>
 
@@ -932,35 +942,43 @@ function wordCandidate(){
     ()=>{ const n=rnd(2,4), per=rnd(60,200), disc=rnd(2,6)*10, orig=per*n+disc;
       return { story:`媽媽生日，蛋糕原價 ${orig} 元，今天買折價 ${disc} 元，我和家人共 ${cn(n)} 人平分。`,
         prompt:'每個人要出多少元？', answer:per, specials:[orig-disc, Math.floor(orig/n), Math.floor(orig/n)-disc, orig],
-        review:`(${orig}−${disc})÷${n}`, key:`word:cake:${orig}:${disc}:${n}` }; },
+        review:`(${orig}−${disc})÷${n}`, key:`word:cake:${orig}:${disc}:${n}`,
+        steps:[`先算折價後：${orig} − ${disc} = ${orig-disc}`, `再平分：${orig-disc} ÷ ${n} = ${per}`] }; },
     ()=>{ const u=rnd(5,20), q=rnd(2,6), f=rnd(2,5)*10, ans=u*q+f;
       return { story:`一枝筆 ${u} 元，買了 ${q} 枝，再加 ${f} 元運費。`,
         prompt:'總共要付多少元？', answer:ans, specials:[u*q, u+q+f, u*q-f, (u+f)*q],
-        review:`${u}×${q}+${f}`, key:`word:pen:${u}:${q}:${f}` }; },
+        review:`${u}×${q}+${f}`, key:`word:pen:${u}:${q}:${f}`,
+        steps:[`先算筆錢：${u} × ${q} = ${u*q}`, `再加運費：${u*q} + ${f} = ${ans}`] }; },
     ()=>{ const n=rnd(2,5), each=rnd(4,10), e=rnd(1,each-1), total=each*n;
       return { story:`${total} 顆糖果平分給 ${cn(n)} 個小朋友，每個人吃掉 ${e} 顆。`,
         prompt:'每個人還剩幾顆？', answer:each-e, specials:[each, total-e, each+e, total/n],
-        review:`${total}÷${n}−${e}`, key:`word:candy:${total}:${n}:${e}` }; },
+        review:`${total}÷${n}−${e}`, key:`word:candy:${total}:${n}:${e}`,
+        steps:[`先平分：${total} ÷ ${n} = ${each}`, `再扣掉吃的：${each} − ${e} = ${each-e}`] }; },
     ()=>{ const w=rnd(20,80), k=rnd(2,6), total=w*k, s=rnd(10,total-1);
       return { story:`小明每週存 ${w} 元，存了 ${k} 週，後來買玩具花了 ${s} 元。`,
         prompt:'小明現在還剩多少元？', answer:total-s, specials:[total, total+s, w+s, total-w],
-        review:`${w}×${k}−${s}`, key:`word:save:${w}:${k}:${s}` }; },
+        review:`${w}×${k}−${s}`, key:`word:save:${w}:${k}:${s}`,
+        steps:[`先算共存：${w} × ${k} = ${total}`, `再扣花費：${total} − ${s} = ${total-s}`] }; },
     ()=>{ const u=rnd(8,40), q=rnd(2,5), cost=u*q, paid=Math.ceil((cost+rnd(5,50))/10)*10;
       return { story:`拿 ${paid} 元，買了 ${q} 個 ${u} 元的麵包。`,
         prompt:'應該找回多少元？', answer:paid-cost, specials:[paid-u, cost, paid-u-q, paid-cost-10],
-        review:`${paid}−${u}×${q}`, key:`word:change:${paid}:${u}:${q}` }; },
+        review:`${paid}−${u}×${q}`, key:`word:change:${paid}:${u}:${q}`,
+        steps:[`先算花費：${u} × ${q} = ${cost}`, `再算找零：${paid} − ${cost} = ${paid-cost}`] }; },
     ()=>{ const u=rnd(80,200), q=rnd(2,4), cost=u*q, D=rnd(3,12)*10;
       return { story:`一件衣服 ${u} 元，買了 ${q} 件，結帳時可以折 ${D} 元。`,
         prompt:'一共要付多少元？', answer:cost-D, specials:[cost, u-D, cost+D, u*q+D],
-        review:`${u}×${q}−${D}`, key:`word:cloth:${u}:${q}:${D}` }; },
+        review:`${u}×${q}−${D}`, key:`word:cloth:${u}:${q}:${D}`,
+        steps:[`先算原價：${u} × ${q} = ${cost}`, `再折價：${cost} − ${D} = ${cost-D}`] }; },
     ()=>{ const half=rnd(6,12), total=half*2, ds=[2,3,4].filter(d=>total%d===0), n=ds[rnd(0,ds.length-1)];
       return { story:`兩盒餅乾各 ${half} 片，平分給 ${cn(n)} 個人。`,
         prompt:'每個人分到幾片？', answer:total/n, specials:[half, total, Math.floor(half/n), total-n],
-        review:`(${half}×2)÷${n}`, key:`word:cookie:${half}:${n}` }; },
+        review:`(${half}×2)÷${n}`, key:`word:cookie:${half}:${n}`,
+        steps:[`先算總片數：${half} × 2 = ${total}`, `再平分：${total} ÷ ${n} = ${total/n}`] }; },
     ()=>{ const n=rnd(2,5), perG=rnd(4,8), T=perG*n;
       return { story:`${T} 個小朋友平分成 ${cn(n)} 組，每組再加 1 位老師。`,
         prompt:'每一組共有幾人？', answer:perG+1, specials:[perG, T/n, T+1, perG+n],
-        review:`${T}÷${n}+1`, key:`word:group:${T}:${n}` }; },
+        review:`${T}÷${n}+1`, key:`word:group:${T}:${n}`,
+        steps:[`先算每組學生：${T} ÷ ${n} = ${perG}`, `再加老師：${perG} + 1 = ${perG+1}`] }; },
   ];
   for(let i=0;i<60;i++){ const c=builders[rnd(0,builders.length-1)](); if(c && Number.isInteger(c.answer) && c.answer>=0) return c; }
   return builders[0]();
@@ -979,7 +997,7 @@ function makeWordQuestion(){
     G.lastBand=null;
   }
   const text=`<span class="wordq">${c.story}<span class="ask">${c.prompt}</span></span>`;
-  return { text, sub:'', options:wordOptions(c.answer, c.specials), answer:String(c.answer), key:c.key, review:c.review };
+  return { text, sub:'', options:wordOptions(c.answer, c.specials), answer:String(c.answer), key:c.key, review:c.review, steps:c.steps };
 }
 
 function makeQuestion(stage){
@@ -1079,6 +1097,8 @@ function updateHud(){
 }
 
 function nextQuestion(){
+  const ex=$('#explain'); if(ex){ ex.classList.remove('show'); ex.innerHTML=''; }
+  const card=$('.qcard'); if(card) card.classList.remove('explaining');
   G.q=makeQuestion(G.stage);
   G.locked=false; G.qStart=performance.now();
   setMascot($('#qMascot'),'idle');
@@ -1128,7 +1148,32 @@ function answer(btn, choice){
   }
   updateHud();
   if(G.score>=GOAL){ G.cleared=true; setTimeout(()=>{ clearInterval(timerId); endGame(true); },600); return; }
+  if(G.q.steps && G.q.steps.length){ showExplain(correct); return; }
   setTimeout(nextQuestion, correct?550:1000);
+}
+
+// 應用題作答後，顯示「先算…再算…」兩步解法，並暫停計時讓孩子看懂再繼續。
+function showExplain(correct){
+  clearInterval(timerId);
+  const marks=['①','②','③','④'];
+  const rows=G.q.steps.map((s,i)=>`<div class="exp-row">${marks[i]||'•'} ${s}</div>`).join('');
+  const box=$('#explain');
+  box.innerHTML=`<div class="exp-title">${correct?'答對了！我們一起看一次 👇':'沒關係，看看怎麼算 👇'}</div>`
+    +rows
+    +`<div class="exp-ans">所以答案是 ${G.q.answer}</div>`
+    +`<button class="btn cont" id="contBtn">繼續 ›</button>`;
+  box.classList.add('show');
+  const card=$('.qcard'); if(card) card.classList.add('explaining');
+  const cont=$('#contBtn');
+  cont.onclick=()=>{ sClick(); continuePlay(); };
+  cont.focus();
+}
+function continuePlay(){
+  const box=$('#explain'); box.classList.remove('show'); box.innerHTML='';
+  const card=$('.qcard'); if(card) card.classList.remove('explaining');
+  if(!G || G.cleared) return;
+  startTimer();
+  nextQuestion();
 }
 
 function recordFact(q, correct, elapsed){
