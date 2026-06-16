@@ -125,6 +125,7 @@
   .mtab[data-mode="eng"]{background:linear-gradient(150deg,rgba(60,170,180,.92),rgba(20,90,110,.93));}
   .mtab[data-mode="sci"]{background:linear-gradient(150deg,rgba(80,175,95,.92),rgba(28,104,52,.93));}
   .mtab[data-mode="soc"]{background:linear-gradient(150deg,rgba(205,140,70,.92),rgba(132,80,30,.93));}
+  .mtab[data-mode="chi"]{background:linear-gradient(150deg,rgba(225,90,90,.92),rgba(140,30,40,.93));}
   .spk{border:none;background:rgba(63,143,222,.18);border-radius:50%;width:1.7em;height:1.7em;font-size:.8em;line-height:1;cursor:pointer;vertical-align:middle;margin-right:.35em;padding:0;}
   .spk:active{transform:scale(.92);}
   .wordq .enw{display:inline-block;font-size:1.5em;letter-spacing:.5px;color:#23506f;}
@@ -435,7 +436,7 @@
         <button class="mtab" data-mode="div" data-glo="3" data-ghi="4"><span class="chapter-icon ui-mark">÷</span><span class="chapter-name">除法山谷</span><span class="chapter-place">小三挑戰</span></button>
         <button class="mtab" data-mode="all" data-glo="3" data-ghi="6"><span class="chapter-icon ui-mark">±×÷</span><span class="chapter-name">全能綜合</span><span class="chapter-place">四則挑戰</span></button>
         <button class="mtab" data-mode="adv" data-glo="3" data-ghi="6"><span class="chapter-icon ui-mark">進</span><span class="chapter-name">進階挑戰</span><span class="chapter-place">三~六年級</span></button>
-        <button class="mtab" data-mode="frac" data-glo="4" data-ghi="6"><span class="chapter-icon ui-mark">½</span><span class="chapter-name">分數樂園</span><span class="chapter-place">四~六年級</span></button>
+        <button class="mtab" data-mode="frac" data-glo="3" data-ghi="6"><span class="chapter-icon ui-mark">½</span><span class="chapter-name">分數小數</span><span class="chapter-place">三~六年級</span></button>
         <button class="mtab" data-mode="geo" data-glo="3" data-ghi="6"><span class="chapter-icon ui-mark">形</span><span class="chapter-name">圖形計算</span><span class="chapter-place">三~六年級</span></button>
         <button class="mtab" data-mode="alg7" data-glo="7" data-ghi="7"><span class="chapter-icon ui-mark">x</span><span class="chapter-name">國一代數</span><span class="chapter-place">七年級</span></button>
         <button class="mtab" data-mode="alg8" data-glo="8" data-ghi="8"><span class="chapter-icon ui-mark">x²</span><span class="chapter-name">國二代數</span><span class="chapter-place">八年級</span></button>
@@ -443,6 +444,7 @@
         <button class="mtab" data-mode="eng" data-glo="1" data-ghi="6"><span class="chapter-icon ui-mark">ABC</span><span class="chapter-name">英文單字</span><span class="chapter-place">小一~六</span></button>
         <button class="mtab" data-mode="sci" data-glo="3" data-ghi="6"><span class="chapter-icon ui-mark">自</span><span class="chapter-name">自然科學</span><span class="chapter-place">三~六年級</span></button>
         <button class="mtab" data-mode="soc" data-glo="3" data-ghi="6"><span class="chapter-icon ui-mark">社</span><span class="chapter-name">社會</span><span class="chapter-place">三~六年級</span></button>
+        <button class="mtab" data-mode="chi" data-glo="1" data-ghi="6"><span class="chapter-icon ui-mark">語</span><span class="chapter-name">國語文</span><span class="chapter-place">小一~六</span></button>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <strong style="font-size:17px;">選擇關卡</strong>
@@ -854,7 +856,8 @@ function stageIcon(stage){
   if(stage.type && stage.type.indexOf('a9_')===0) return '九';
   if(stage.type==='eng') return 'A';
   if(stage.type==='engspell') return '拼';
-  if(stage.type==='bank') return stage.bank && stage.bank.indexOf('soc')===0 ? '社' : '自';
+  if(stage.type && stage.type.indexOf('dec_')===0) return '小';
+  if(stage.type==='bank'){ const b=stage.bank||''; if(b.indexOf('soc')===0) return '社'; if(b.indexOf('chi')===0) return '語'; return '自'; }
   return stage.n || '×';
 }
 
@@ -1953,6 +1956,90 @@ const BANKS={
     {q:'「永續發展」的精神是？',o:['兼顧現在與未來世代的需要','只顧現在享受','只想賺錢','用完就算了'],a:0,e:'永續＝滿足當代又不損及後代。'},
     {q:'是非題：依法納稅是國民應盡的義務。',o:['對','錯'],a:0,e:'對。納稅是國民義務之一。'},
     {q:'是非題：立法院負責制定法律。',o:['對','錯'],a:0,e:'對。立法院是我國的立法機關。'}
+  ],
+  chi_zhuyin:[
+    {q:'「水」的注音是？',o:['ㄕㄨㄟˇ','ㄕㄟˇ','ㄙㄨㄟˇ','ㄓㄨㄟˇ'],a:0,e:'水唸ㄕㄨㄟˇ。'},
+    {q:'「ㄊㄞˋ ㄧㄤˊ」是哪個語詞？',o:['太陽','大樣','抬羊','台洋'],a:0,e:'ㄊㄞˋㄧㄤˊ＝太陽。'},
+    {q:'第三聲的調號是哪一個？',o:['ˇ','ˊ','ˋ','˙'],a:0,e:'三聲用ˇ（上聲）。'},
+    {q:'輕聲的符號是哪一個？',o:['˙','ˇ','ˊ','ˋ'],a:0,e:'輕聲用˙，標在注音上方。'},
+    {q:'「爸」（ㄅㄚˋ）是第幾聲？',o:['第四聲','第一聲','第二聲','第三聲'],a:0,e:'ㄅㄚˋ是第四聲（去聲）。'},
+    {q:'「花」的注音是？',o:['ㄏㄨㄚ','ㄈㄨㄚ','ㄏㄨㄛ','ㄎㄨㄚ'],a:0,e:'花唸ㄏㄨㄚ（一聲）。'},
+    {q:'「ㄆㄥˊ ㄧㄡˇ」是哪個語詞？',o:['朋友','棚有','蓬友','碰友'],a:0,e:'ㄆㄥˊㄧㄡˇ＝朋友。'},
+    {q:'第二聲（陽平）的調號是？',o:['ˊ','ˇ','ˋ','˙'],a:0,e:'二聲用ˊ。'},
+    {q:'「魚」的注音是？',o:['ㄩˊ','ㄨˊ','ㄜˊ','ㄧˊ'],a:0,e:'魚唸ㄩˊ。'},
+    {q:'「老師」的「師」注音是？',o:['ㄕ','ㄙ','ㄒㄧ','ㄔ'],a:0,e:'師唸ㄕ（一聲）。'}
+  ],
+  chi_radical:[
+    {q:'「江、河、海」的部首都是？',o:['水（氵）','木','土','火'],a:0,e:'三點水部，與水有關。'},
+    {q:'「花、草、葉」的部首是？',o:['艸（艹）','木','口','日'],a:0,e:'草字頭，與植物有關。'},
+    {q:'「說、話、語」的部首是？',o:['言（訁）','口','心','手'],a:0,e:'言字旁，與言語有關。'},
+    {q:'「打、拍、提」的部首是？',o:['手（扌）','木','刀','口'],a:0,e:'提手旁，與手部動作有關。'},
+    {q:'「明」這個字的部首是？',o:['日','月','口','目'],a:0,e:'明＝日＋月，部首是日。'},
+    {q:'「想」這個字的部首是？',o:['心','木','目','日'],a:0,e:'想下方是心部。'},
+    {q:'「日」這個字有幾畫？',o:['4','3','5','6'],a:0,e:'日是4畫。'},
+    {q:'「火」這個字有幾畫？',o:['4','3','5','2'],a:0,e:'火是4畫。'},
+    {q:'「王」這個字有幾畫？',o:['4','3','5','2'],a:0,e:'王是4畫。'},
+    {q:'寫「十」字時，正確筆順是？',o:['先寫橫再寫豎','先寫豎再寫橫','都可以','先點一點'],a:0,e:'先橫後豎。'}
+  ],
+  chi_measure:[
+    {q:'一（？）狗',o:['隻','本','張','條'],a:0,e:'一隻狗。'},
+    {q:'一（？）書',o:['本','隻','張','匹'],a:0,e:'一本書。'},
+    {q:'一（？）紙',o:['張','本','隻','條'],a:0,e:'一張紙。'},
+    {q:'一（？）魚',o:['條','隻','本','座'],a:0,e:'一條魚。'},
+    {q:'一（？）花',o:['朵','本','隻','張'],a:0,e:'一朵花。'},
+    {q:'一（？）椅子',o:['把','本','張','條'],a:0,e:'一把椅子。'},
+    {q:'一（？）山',o:['座','條','隻','本'],a:0,e:'一座山。'},
+    {q:'一（？）牛',o:['頭','匹','張','本'],a:0,e:'一頭牛。'},
+    {q:'一（？）馬',o:['匹','頭','本','張'],a:0,e:'一匹馬。'},
+    {q:'一（？）鉛筆',o:['枝','本','張','條'],a:0,e:'一枝鉛筆。'}
+  ],
+  chi_idiom:[
+    {q:'成語填空：一心一（？）',o:['意','二','三','想'],a:0,e:'一心一意：專心不分心。'},
+    {q:'成語填空：九牛一（？）',o:['毛','牛','根','羊'],a:0,e:'九牛一毛：極少的一部分。'},
+    {q:'成語填空：畫蛇添（？）',o:['足','手','尾','頭'],a:0,e:'畫蛇添足：多此一舉。'},
+    {q:'成語填空：井底之（？）',o:['蛙','魚','蛇','鳥'],a:0,e:'井底之蛙：見識狹小。'},
+    {q:'成語填空：對牛彈（？）',o:['琴','鼓','歌','笛'],a:0,e:'對牛彈琴：對不懂的人講道理。'},
+    {q:'成語填空：守株待（？）',o:['兔','豬','雞','魚'],a:0,e:'守株待兔：死守經驗、不知變通。'},
+    {q:'成語填空：亡羊補（？）',o:['牢','門','洞','羊'],a:0,e:'亡羊補牢：出事後及時補救。'},
+    {q:'成語填空：狐假虎（？）',o:['威','皮','牙','口'],a:0,e:'狐假虎威：仗著別人的勢力欺人。'},
+    {q:'「胸有成竹」的意思是？',o:['做事前已有把握','很會畫竹子','胸口痛','種了竹子'],a:0,e:'比喻事前已有完整計畫、把握十足。'},
+    {q:'「七上八下」形容？',o:['心情忐忑不安','數字','爬樓梯','排隊'],a:0,e:'形容心裡慌亂、不安定。'}
+  ],
+  chi_synonym:[
+    {q:'「快樂」的近義詞是？',o:['高興','難過','生氣','害怕'],a:0,e:'快樂≈高興。'},
+    {q:'「美麗」的近義詞是？',o:['漂亮','醜陋','普通','骯髒'],a:0,e:'美麗≈漂亮。'},
+    {q:'「炎熱」的近義詞是？',o:['酷熱','寒冷','涼爽','溫暖'],a:0,e:'炎熱≈酷熱。'},
+    {q:'「巨大」的反義詞是？',o:['微小','龐大','高大','寬大'],a:0,e:'巨大↔微小。'},
+    {q:'「快」的反義詞是？',o:['慢','急','迅','速'],a:0,e:'快↔慢。'},
+    {q:'「黑暗」的反義詞是？',o:['光明','陰暗','夜晚','黑色'],a:0,e:'黑暗↔光明。'},
+    {q:'「勇敢」的反義詞是？',o:['膽小','英勇','大膽','勇猛'],a:0,e:'勇敢↔膽小。'},
+    {q:'「真」的反義詞是？',o:['假','實','誠','正'],a:0,e:'真↔假。'},
+    {q:'「開始」的反義詞是？',o:['結束','起頭','出發','開端'],a:0,e:'開始↔結束。'},
+    {q:'「安靜」的反義詞是？',o:['吵鬧','寧靜','平靜','沉默'],a:0,e:'安靜↔吵鬧。'}
+  ],
+  chi_typo:[
+    {q:'哪一個是正確的寫法？',o:['加油','加由','加游','加猶'],a:0,e:'正確是「加油」。'},
+    {q:'哪一個是正確的寫法？',o:['謝謝','謝歇','射射','謝協'],a:0,e:'正確是「謝謝」。'},
+    {q:'哪一個是正確的寫法？',o:['休息','休習','体息','休昔'],a:0,e:'正確是「休息」。'},
+    {q:'「ㄗㄞˋ見」正確的寫法是？',o:['再見','在見','載見','在現'],a:0,e:'下次再見用「再」。'},
+    {q:'「我已經吃飽了」的「ㄧˇ」正確是？',o:['已','己','巳','以'],a:0,e:'「已經」用已；不是己（自己）。'},
+    {q:'哪一個是正確的寫法？',o:['蘋果','頻果','苹果','平果'],a:0,e:'正確是「蘋果」。'},
+    {q:'哪一個是正確的寫法？',o:['老師','老獅','老司','老施'],a:0,e:'正確是「老師」。'},
+    {q:'哪一個是正確的寫法？',o:['功課','工課','功棵','公課'],a:0,e:'正確是「功課」。'},
+    {q:'「ㄅㄤ ㄇㄤˊ」正確的寫法是？',o:['幫忙','幫亡','邦忙','幫芒'],a:0,e:'正確是「幫忙」。'},
+    {q:'「我ㄗㄞˋ家」正確的寫法是？',o:['在家','再家','在嫁','才家'],a:0,e:'人在某處用「在」。'}
+  ],
+  chi_punct:[
+    {q:'一句話說完、語氣完整時，用哪個標點？',o:['句號。','逗號，','問號？','驚嘆號！'],a:0,e:'陳述句結尾用句號。'},
+    {q:'要表示疑問時，用哪個標點？',o:['問號？','句號。','逗號，','頓號、'],a:0,e:'疑問句用問號。'},
+    {q:'表示驚訝或強烈感情時，用哪個標點？',o:['驚嘆號！','句號。','逗號，','冒號：'],a:0,e:'感嘆句用驚嘆號。'},
+    {q:'句子中間短暫停頓，用哪個標點？',o:['逗號，','句號。','問號？','書名號'],a:0,e:'句中停頓用逗號。'},
+    {q:'並列詞語之間（蘋果、香蕉、橘子）用哪個標點？',o:['頓號、','逗號，','句號。','冒號：'],a:0,e:'並列詞語用頓號。'},
+    {q:'要引用別人說的話，用哪個標點？',o:['引號「」','括號（）','書名號《》','破折號—'],a:0,e:'說的話用引號。'},
+    {q:'書名、篇名要用哪個標點？',o:['書名號《》','引號「」','括號（）','問號？'],a:0,e:'書名用書名號。'},
+    {q:'「你吃飽了嗎（？）」括號內最適合填？',o:['？','。','，','！'],a:0,e:'疑問句用問號。'},
+    {q:'「哇，好棒（？）」最適合填？',o:['！','。','？','、'],a:0,e:'感嘆用驚嘆號。'},
+    {q:'要解釋或總結下文，前面常用哪個標點？',o:['冒號：','逗號，','頓號、','問號？'],a:0,e:'提示下文用冒號。'}
   ]
 };
 function makeBankQuestion(stage){
@@ -1976,6 +2063,68 @@ STAGE_SETS.soc=[
   {id:'soc5',type:'bank',bank:'soc5',name:'五年級社會',special:true},
   {id:'soc6',type:'bank',bank:'soc6',name:'六年級社會',special:true},
 ];
+STAGE_SETS.chi=[
+  {id:'chi_zhuyin',type:'bank',bank:'chi_zhuyin',name:'注音與聲調'},
+  {id:'chi_radical',type:'bank',bank:'chi_radical',name:'部首與筆畫'},
+  {id:'chi_measure',type:'bank',bank:'chi_measure',name:'量詞'},
+  {id:'chi_idiom',type:'bank',bank:'chi_idiom',name:'成語',special:true},
+  {id:'chi_synonym',type:'bank',bank:'chi_synonym',name:'近義詞・反義詞'},
+  {id:'chi_typo',type:'bank',bank:'chi_typo',name:'錯別字',special:true},
+  {id:'chi_punct',type:'bank',bank:'chi_punct',name:'標點符號'},
+];
+
+/* ===================== 小數 ===================== */
+function decStr(t){ return String(t/10); }
+function decOptions(ans, dists){
+  const set=new Set([ans]);
+  for(const d of dists){ if(set.size>=4) break; if(d>=0 && d!==ans) set.add(d); }
+  const dd=[1,-1,2,-2,5,-5,10,-10]; let g=0;
+  while(set.size<4 && g++<40){ const c=ans+dd[rnd(0,dd.length-1)]; if(c>=0 && c!==ans) set.add(c); }
+  return shuffle([...set].map(decStr));
+}
+function genDecAddSub(){
+  const add=rnd(0,1)===0;
+  let A=rnd(2,40), B=rnd(2,40); if(!add && A<B){ const t=A; A=B; B=t; }
+  const ans=add?A+B:A-B, op=add?'+':'−';
+  return { text:`<span class="wordq">${decStr(A)} ${op} ${decStr(B)} = ?</span>`, sub:'',
+    options:decOptions(ans,[add?A-B:A+B, ans+10, ans-10, ans+1]), answer:decStr(ans), key:`dec:as:${add?'p':'m'}:${A}:${B}`, review:`${decStr(A)}${op}${decStr(B)}=${decStr(ans)}`,
+    steps:[`小數點對齊，再${add?'相加':'相減'}`, `${decStr(A)} ${op} ${decStr(B)} = ${decStr(ans)}`] };
+}
+function genDecMul(){
+  if(rnd(0,1)===0){ const A=rnd(2,30), k=rnd(2,9), ans=A*k;
+    return { text:`<span class="wordq">${decStr(A)} × ${k} = ?</span>`, sub:'',
+      options:decOptions(ans,[A*k+10,A+k*10,ans-1,ans+1]), answer:decStr(ans), key:`dec:mul:${A}:${k}`, review:`${decStr(A)}×${k}=${decStr(ans)}`,
+      steps:[`先當作整數相乘，再點上小數點`, `${decStr(A)} × ${k} = ${decStr(ans)}`] };
+  }
+  const Q=rnd(2,30), k=rnd(2,9), A=Q*k;
+  return { text:`<span class="wordq">${decStr(A)} ÷ ${k} = ?</span>`, sub:'',
+    options:decOptions(Q,[A,Q*10,Q+1,Q-1]), answer:decStr(Q), key:`dec:div:${A}:${k}`, review:`${decStr(A)}÷${k}=${decStr(Q)}`,
+    steps:[`商的小數點對齊被除數的小數點`, `${decStr(A)} ÷ ${k} = ${decStr(Q)}`] };
+}
+function genDecFrac(){
+  const pairs=[['0.5','1/2'],['0.25','1/4'],['0.75','3/4'],['0.2','1/5'],['0.4','2/5'],['0.6','3/5'],['0.8','4/5'],['0.1','1/10'],['1.5','3/2'],['0.05','1/20']];
+  const p=pairs[rnd(0,pairs.length-1)];
+  if(rnd(0,1)===0){ const ans=p[1], dist=shuffle(pairs.filter(x=>x[1]!==ans).map(x=>x[1])).slice(0,3);
+    return { text:`<span class="wordq">${p[0]} = ?（分數）</span>`, sub:'', options:strOptions(ans,dist), answer:ans, key:`dec:d2f:${p[0]}`, review:`${p[0]}=${ans}`,
+      steps:[`把小數寫成分母 10、100… 再約分`, `${p[0]} = ${fracHTML(ans)}`] };
+  }
+  const ans=p[0], dist=shuffle(pairs.filter(x=>x[0]!==ans).map(x=>x[0])).slice(0,3);
+  return { text:`<span class="wordq">${fracHTML(p[1])} = ?（小數）</span>`, sub:'', options:strOptions(ans,dist), answer:ans, key:`dec:f2d:${p[1]}`, review:`${p[1]}=${ans}`,
+    steps:[`分子 ÷ 分母 換成小數`, `${fracHTML(p[1])} = ${ans}`] };
+}
+function makeDecQuestion(stage){
+  const g={dec_addsub:genDecAddSub,dec_mul:genDecMul,dec_frac:genDecFrac}[stage.type]||genDecAddSub;
+  let q=null;
+  for(let i=0;i<24;i++){ q=g(); if(q && !(G && G.recentKeys && G.recentKeys.includes(q.key))) break; }
+  if(!q) q=g();
+  if(G){ G.recentKeys=G.recentKeys||[]; G.recentKeys.push(q.key); while(G.recentKeys.length>40) G.recentKeys.shift(); G.lastBand=null; }
+  return q;
+}
+STAGE_SETS.frac = STAGE_SETS.frac.concat([
+  {id:'f9', type:'dec_addsub', name:'小數加減'},
+  {id:'f10', type:'dec_mul', name:'小數乘除'},
+  {id:'f11', type:'dec_frac', name:'小數與分數互換', special:true},
+]);
 
 function makeQuestion(stage){
   if(stage.type==='review'){
@@ -2012,6 +2161,7 @@ function makeQuestion(stage){
   if(stage.type==='eng') return makeEngQuestion(stage);
   if(stage.type==='engspell') return makeEngSpell(stage);
   if(stage.type==='bank') return makeBankQuestion(stage);
+  if(stage.type.indexOf('dec_')===0) return makeDecQuestion(stage);
   if(['unit1','unit2','round','mixops','factor','average','speed','percent','ratio'].includes(stage.type)) return makeAdvQuestion(stage);
   if(stage.type==='allmix') return questionFromCandidate(pickNext(allMixCandidates(stage)));
   if(stage.type==='division') return questionFromCandidate(pickNext(divisionCandidates(stage)));
