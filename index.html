@@ -113,6 +113,8 @@
   .mtab[data-mode="adv"]{background:linear-gradient(150deg,rgba(38,150,140,.88),rgba(18,84,86,.92));}
   .mtab[data-mode="frac"]{background:linear-gradient(150deg,rgba(225,120,70,.9),rgba(150,60,40,.92));}
   .mtab[data-mode="geo"]{background:linear-gradient(150deg,rgba(90,120,200,.9),rgba(40,60,130,.92));}
+  .mtab[data-mode="alg7"]{background:linear-gradient(150deg,rgba(70,160,120,.9),rgba(28,96,80,.93));}
+  .opt sup,.question sup{font-size:.62em;}
   .mtab.active{filter:saturate(1.12) brightness(1.08);box-shadow:0 5px 0 #d49b35,0 0 0 3px #fff1a3,inset 0 0 0 2px rgba(255,255,255,.24);}
   .mtab:active{transform:scale(.97);}
   .stages{
@@ -363,7 +365,7 @@
   /* ===== 桌機/大螢幕：關卡改多欄網格，善用橫向空間，不再是中間一直條 ===== */
   @media (min-width:900px){
     .wrap{max-width:1100px;}
-    .modetabs{grid-template-columns:repeat(7,1fr);}
+    .modetabs{grid-template-columns:repeat(8,1fr);}
     .stages{grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px 18px;padding:6px 2px;}
     .stages::before{display:none;}                                   /* 隱藏中間路徑線 */
     .stage,.stage:nth-child(odd),.stage:nth-child(even){width:auto;justify-self:stretch;}
@@ -397,6 +399,7 @@
         <button class="mtab" data-mode="adv"><span class="chapter-icon ui-mark">進</span><span class="chapter-name">進階挑戰</span><span class="chapter-place">三~六年級</span></button>
         <button class="mtab" data-mode="frac"><span class="chapter-icon ui-mark">½</span><span class="chapter-name">分數樂園</span><span class="chapter-place">四~六年級</span></button>
         <button class="mtab" data-mode="geo"><span class="chapter-icon ui-mark">形</span><span class="chapter-name">圖形計算</span><span class="chapter-place">三~六年級</span></button>
+        <button class="mtab" data-mode="alg7"><span class="chapter-icon ui-mark">x</span><span class="chapter-name">國一代數</span><span class="chapter-place">七年級</span></button>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <strong style="font-size:17px;">選擇關卡</strong>
@@ -559,6 +562,14 @@ const STAGE_SETS = {
     {id:'g5', type:'geo_trap', name:'梯形面積', special:true},
     {id:'g6', type:'geo_boxvol', name:'長方體體積'},
     {id:'g7', type:'geo_cubevol', name:'正方體體積', special:true},
+  ],
+  alg7: [
+    {id:'n1', type:'alg_negarith', name:'正負數四則運算'},
+    {id:'n2', type:'alg_abs', name:'絕對值'},
+    {id:'n3', type:'alg_lineq', name:'一元一次方程式'},
+    {id:'n4', type:'alg_system', name:'二元一次聯立', special:true},
+    {id:'n5', type:'alg_ineq', name:'一元一次不等式', special:true},
+    {id:'n6', type:'alg_expo', name:'指數與科學記號', special:true},
   ],
 };
 let curMode = 'mult';
@@ -779,6 +790,7 @@ function stageIcon(stage){
   if(stage.type==='ratio') return ':';
   if(stage.type && stage.type.indexOf('fr_')===0) return '½';
   if(stage.type && stage.type.indexOf('geo_')===0) return '形';
+  if(stage.type && stage.type.indexOf('alg_')===0) return 'x';
   return stage.n || '×';
 }
 
@@ -1055,7 +1067,7 @@ function makeWordQuestion(){
 
 /* ===================== 進階挑戰（三~六年級・依課綱） ===================== */
 function gcd(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){ [a,b]=[b,a%b]; } return a||1; }
-function advText(main, ask){ return `<span class="wordq">${main}${ask?`<span class="ask">${ask}</span>`:''}</span>`; }
+function advText(main, ask){ return `<span class="wordq">${esc(main)}${ask?`<span class="ask">${esc(ask)}</span>`:''}</span>`; }
 function strOptions(answer, cands){
   const opts=new Set([answer]);
   for(const d of (cands||[])){ if(opts.size>=4) break; if(d && d!==answer) opts.add(d); }
@@ -1390,6 +1402,109 @@ function makeGeoQuestion(stage){
   return q;
 }
 
+/* ===================== 國一 數與代數（代數式顯示＋題型） ===================== */
+function numStr(n){ return n<0 ? '−'+Math.abs(n) : String(n); }
+// 把當作運算子的 < > （前後有空白）轉成 HTML 實體，避免被 innerHTML 當成標籤。
+// 產生的 <sup>/<span> 標籤緊接無空白，不受影響。
+function esc(s){ return String(s).replace(/ < /g,' &lt; ').replace(/ > /g,' &gt; '); }
+function expoHTML(s){ return String(s).replace(/(\d+|[a-z])\^(-?\d+)/g, '$1<sup>$2</sup>'); }
+function mathHTML(tok){
+  tok=String(tok);
+  if(/^\d+_\d+\/\d+$/.test(tok) || /^-?\d+\/\d+$/.test(tok)) return fracHTML(tok);
+  return esc(expoHTML(tok));
+}
+function intOptions(ans, specials){
+  const set=new Set([ans]);
+  for(const v of (specials||[])){ if(set.size>=4) break; if(Number.isInteger(v) && v!==ans) set.add(v); }
+  const d=[1,-1,2,-2,3,-3,4,-4,5,-5]; let g=0;
+  while(set.size<4 && g++<80){ let c=ans+d[rnd(0,d.length-1)]; if(c===ans) c=ans+rnd(1,4); set.add(c); }
+  return shuffle([...set].map(numStr));
+}
+function genNegArith(){
+  const t=rnd(0,3);
+  const P=n=> n<0?`(${numStr(n)})`:String(n);
+  let a,b,ans,expr,rule=null;
+  if(t===0){ a=rnd(-9,9); b=rnd(-9,9); ans=a+b; expr=`${P(a)} + ${P(b)}`; }
+  else if(t===1){ a=rnd(-9,9); b=rnd(-9,9); ans=a-b; expr=`${P(a)} − ${P(b)}`; }
+  else if(t===2){ a=rnd(-9,9); b=rnd(-9,9); ans=a*b; expr=`${P(a)} × ${P(b)}`; rule='同號得正、異號得負'; }
+  else { const q=rnd(-9,9); const dv=rnd(2,9)*(rnd(0,1)?1:-1); a=dv*q; b=dv; ans=q; expr=`${P(a)} ÷ ${P(b)}`; rule='同號得正、異號得負'; }
+  const o={ text:advText(`${expr} = ?`,''), sub:'', options:intOptions(ans,[-ans,ans+1,ans-1,ans+2]), answer:numStr(ans), key:`alg:neg:${t}:${a}:${b}`, review:`${expr}=${ans}` };
+  if(rule) o.steps=[rule, `${expr} = ${numStr(ans)}`];
+  return o;
+}
+function genAbs(){
+  const a=rnd(-9,9), b=rnd(-9,9), t=rnd(0,2);
+  let main,ans;
+  if(t===0){ main=`|${numStr(a)}| = ?`; ans=Math.abs(a); }
+  else if(t===1){ main=`|${numStr(a)}| + |${numStr(b)}| = ?`; ans=Math.abs(a)+Math.abs(b); }
+  else { main=`|${numStr(a)}| − |${numStr(b)}| = ?`; ans=Math.abs(a)-Math.abs(b); }
+  return { text:advText(main,''), sub:'', options:intOptions(ans,[a,b,-ans,ans+1]), answer:numStr(ans), key:`alg:abs:${t}:${a}:${b}`, review:`${main}=${ans}` };
+}
+function genLinEq(){
+  const term=n=>`${n<0?'− ':'+ '}${Math.abs(n)}`;
+  const x=rnd(-6,8);
+  if(rnd(0,1)===0){
+    const a=rnd(2,9); let b=rnd(-9,9); if(b===0) b=3; const c=a*x+b;
+    return { text:advText(`${a}x ${term(b)} = ${numStr(c)}`,'x = ?'), sub:'',
+      options:intOptions(x,[x+1,x-1,-x,x+2]), answer:numStr(x), key:`alg:eq1:${a}:${b}:${c}`, review:`${a}x${term(b)}=${c}→x=${x}`,
+      steps:[`移項：${a}x = ${numStr(c)} − (${numStr(b)}) = ${numStr(c-b)}`, `x = ${numStr(c-b)} ÷ ${a} = ${numStr(x)}`] };
+  }
+  let a=rnd(2,9), c=rnd(1,9); while(c===a) c=rnd(1,9); let b=rnd(-9,9); if(b===0) b=2; const d=(a-c)*x+b;
+  return { text:advText(`${a}x ${term(b)} = ${c}x ${term(d)}`,'x = ?'), sub:'',
+    options:intOptions(x,[x+1,x-1,-x,x+2]), answer:numStr(x), key:`alg:eq2:${a}:${b}:${c}:${d}`, review:`${a}x${term(b)}=${c}x${term(d)}→x=${x}`,
+    steps:[`把 x 移到同一邊：(${a} − ${c})x = ${numStr(d)} − (${numStr(b)})`, `${numStr(a-c)}x = ${numStr(d-b)}`, `x = ${numStr(x)}`] };
+}
+function genSystem(){
+  const x=rnd(1,9), y=rnd(1,9);
+  const sysQ=(e1,e2,steps,k)=>{ const ans=`(${x}, ${y})`;
+    return { text:advText(`${e1}　${e2}`,'(x, y) = ?'), sub:'',
+      options:strOptions(ans,[`(${y}, ${x})`,`(${x+1}, ${y-1})`,`(${x-1}, ${y+1})`,`(${x}, ${y+1})`]), answer:ans, key:`alg:${k}`, review:`${e1};${e2}`, steps }; };
+  if(rnd(0,1)===0){ const S=x+y, D=x-y;
+    return sysQ(`x + y = ${S}`, `x − y = ${numStr(D)}`, [`兩式相加：2x = ${S+D}，x = ${x}`, `代回求 y = ${y} → (${x}, ${y})`], `sys1:${x}:${y}`);
+  }
+  const S=x+y, T=2*x+y;
+  return sysQ(`x + y = ${S}`, `2x + y = ${T}`, [`兩式相減：x = ${T} − ${S} = ${x}`, `代回求 y = ${y} → (${x}, ${y})`], `sys2:${x}:${y}`);
+}
+function genIneq(){
+  const term=n=>`${n<0?'− ':'+ '}${Math.abs(n)}`;
+  const ops=['>','<','≥','≤'], flip={'>':'<','<':'>','≥':'≤','≤':'≥'};
+  const a=[2,3,4,5,-2,-3,-4][rnd(0,6)];
+  const x0=rnd(-5,7); let b=rnd(-6,6); if(b===0) b=2; const c=a*x0+b;
+  const op=ops[rnd(0,3)];
+  const solved=a<0?flip[op]:op, wrong=a<0?op:flip[op];
+  const ans=`x ${solved} ${numStr(x0)}`;
+  return { text:advText(`${numStr(a)}x ${term(b)} ${op} ${numStr(c)}`,'解是？'), sub:'',
+    options:strOptions(ans,[`x ${wrong} ${numStr(x0)}`, `x ${solved} ${numStr(x0+1)}`, `x ${solved} ${numStr(x0-1)}`, `x ${wrong} ${numStr(x0+1)}`]),
+    answer:ans, key:`alg:ineq:${a}:${b}:${op}:${c}`, review:`${a}x${term(b)}${op}${c}`,
+    steps:[`移項：${a}x ${op} ${numStr(c)} − (${numStr(b)}) = ${numStr(c-b)}`, a<0?`除以負數 ${a}，不等號要反向`:`兩邊同除以 ${a}`, `x ${solved} ${numStr(x0)}`] };
+}
+function genExpo(){
+  const t=rnd(0,2);
+  if(t===0){ const base=[2,3,5][rnd(0,2)], e=rnd(2,4), v=base**e;
+    return { text:advText(expoHTML(`${base}^${e} = ?`),''), sub:'',
+      options:intOptions(v,[base*e, v+base, base**(e-1), v-base]), answer:numStr(v), key:`alg:expv:${base}:${e}`, review:`${base}^${e}=${v}`,
+      steps:[`${base}^${e} 代表 ${e} 個 ${base} 相乘`, expoHTML(`${base}^${e} = ${v}`)] };
+  }
+  if(t===1){ const base=[2,3,5,10][rnd(0,3)], m=rnd(1,4), n=rnd(1,4); const ans=`${base}^${m+n}`;
+    return { text:advText(expoHTML(`${base}^${m} × ${base}^${n} = ?`),''), sub:'',
+      options:strOptions(ans,[`${base}^${m*n}`,`${base}^${m+n+1}`,`${base*base}^${m+n}`,`${base}^${Math.abs(m-n)||1}`]), answer:ans, key:`alg:exmul:${base}:${m}:${n}`, review:`${base}^${m}×${base}^${n}`,
+      steps:[`指數律：底數不變、指數相加`, expoHTML(`${base}^${m} × ${base}^${n} = ${base}^${m+n}`)] };
+  }
+  const d=rnd(1,9), z=rnd(3,6), v=d*(10**z), vs=v.toLocaleString('en-US'); const ans=`${d}×10^${z}`;
+  return { text:advText(`${vs} 用科學記號表示 = ?`,''), sub:'',
+    options:strOptions(ans,[`${d}×10^${z+1}`,`${d}×10^${z-1}`,`${d*10}×10^${z-1}`]), answer:ans, key:`alg:sci:${v}`, review:`${vs}=${ans}`,
+    steps:[`把小數點移到第一位數字後面`, expoHTML(`${vs} = ${d}×10^${z}`)] };
+}
+function makeAlgQuestion(stage){
+  const gens={alg_negarith:genNegArith,alg_abs:genAbs,alg_lineq:genLinEq,alg_system:genSystem,alg_ineq:genIneq,alg_expo:genExpo};
+  const gen=gens[stage.type]||genNegArith;
+  let q=null;
+  for(let i=0;i<24;i++){ q=gen(); if(q && !(G && G.recentKeys && G.recentKeys.includes(q.key))) break; }
+  if(!q) q=gen();
+  if(G && q){ G.recentKeys=G.recentKeys||[]; G.recentKeys.push(q.key); while(G.recentKeys.length>40) G.recentKeys.shift(); G.lastBand=null; }
+  return q;
+}
+
 function makeQuestion(stage){
   if(stage.type==='review'){
     const weak=weakCandidates();
@@ -1419,6 +1534,7 @@ function makeQuestion(stage){
   if(stage.type==='word') return makeWordQuestion();
   if(stage.type.indexOf('fr_')===0) return makeFracQuestion(stage);
   if(stage.type.indexOf('geo_')===0) return makeGeoQuestion(stage);
+  if(stage.type.indexOf('alg_')===0) return makeAlgQuestion(stage);
   if(['unit1','unit2','round','mixops','factor','average','speed','percent','ratio'].includes(stage.type)) return makeAdvQuestion(stage);
   if(stage.type==='allmix') return questionFromCandidate(pickNext(allMixCandidates(stage)));
   if(stage.type==='division') return questionFromCandidate(pickNext(divisionCandidates(stage)));
@@ -1501,7 +1617,7 @@ function nextQuestion(){
   const box=$('#options'); box.innerHTML='';
   G.q.options.forEach((opt,idx)=>{
     const b=document.createElement('button');
-    b.className='opt enter'; b.dataset.val=opt; b.innerHTML=fracHTML(opt);
+    b.className='opt enter'; b.dataset.val=opt; b.innerHTML=mathHTML(opt);
     b.style.setProperty('--i',idx);
     b.onclick=()=>answer(b,opt);
     box.appendChild(b);
@@ -1549,11 +1665,11 @@ function answer(btn, choice){
 function showExplain(correct){
   clearInterval(timerId);
   const marks=['①','②','③','④'];
-  const rows=G.q.steps.map((s,i)=>`<div class="exp-row">${marks[i]||'•'} ${s}</div>`).join('');
+  const rows=G.q.steps.map((s,i)=>`<div class="exp-row">${marks[i]||'•'} ${esc(s)}</div>`).join('');
   const box=$('#explain');
   box.innerHTML=`<div class="exp-title">${correct?'答對了！我們一起看一次 👇':'沒關係，看看怎麼算 👇'}</div>`
     +rows
-    +`<div class="exp-ans">所以答案是 ${G.q.answer}</div>`
+    +`<div class="exp-ans">所以答案是 ${mathHTML(G.q.answer)}</div>`
     +`<button class="btn cont" id="contBtn">繼續 ›</button>`;
   box.classList.add('show');
   const card=$('.qcard'); if(card) card.classList.add('explaining');
