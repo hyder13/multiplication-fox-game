@@ -111,6 +111,7 @@
   .mtab[data-mode="div"]{background:linear-gradient(180deg,rgba(61,111,191,.08),rgba(20,54,101,.72)),url("chapter-div.webp") center/cover;}
   .mtab[data-mode="all"]{background:linear-gradient(150deg,rgba(150,86,176,.86),rgba(72,44,120,.92));}
   .mtab[data-mode="adv"]{background:linear-gradient(150deg,rgba(38,150,140,.88),rgba(18,84,86,.92));}
+  .mtab[data-mode="frac"]{background:linear-gradient(150deg,rgba(225,120,70,.9),rgba(150,60,40,.92));}
   .mtab.active{filter:saturate(1.12) brightness(1.08);box-shadow:0 5px 0 #d49b35,0 0 0 3px #fff1a3,inset 0 0 0 2px rgba(255,255,255,.24);}
   .mtab:active{transform:scale(.97);}
   .stages{
@@ -230,6 +231,12 @@
   .question .wordq{display:block;font-size:21px;font-weight:800;line-height:1.6;color:#3a2410;max-width:min(80vw,520px);text-align:center;}
   .question .wordq .ask{display:block;margin-top:10px;color:#b3551f;font-size:23px;}
   @media (min-width:700px){ .question .wordq{font-size:26px;} .question .wordq .ask{font-size:28px;} }
+  /* 分數顯示元件：分子/分母堆疊、帶分數 */
+  .fr{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;vertical-align:middle;margin:0 .14em;line-height:1.05;}
+  .fr .nu{display:block;padding:0 .28em;border-bottom:.1em solid currentColor;}
+  .fr .de{display:block;padding:0 .28em;}
+  .mixed{display:inline-flex;align-items:center;vertical-align:middle;gap:.14em;}
+  .mixed .wh{font-weight:900;}
   .options{position:relative;z-index:1;display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px;}
   .opt{position:relative;border:4px solid #70431f;border-radius:16px;padding:18px 8px;font-size:28px;font-weight:900;cursor:pointer;color:#fff7d8;
     background:linear-gradient(180deg,#a46431,#74411e 68%,#5c3216);box-shadow:0 8px 0 #3f2412,0 13px 16px rgba(62,39,18,.18),inset 0 0 0 2px rgba(255,229,158,.2);text-shadow:0 2px 0 rgba(35,18,7,.52);transition:transform .08s,box-shadow .08s;}
@@ -320,7 +327,7 @@
     .mascot{font-size:86px;}
     .title #homeMascot{width:268px;height:248px;margin-bottom:-4px;}
     .panel{border-radius:30px;padding:24px;}
-    .modetabs{padding:8px;gap:10px;grid-template-columns:repeat(5,1fr);} .mtab{font-size:20px;padding:17px 12px 16px;min-height:122px;}
+    .modetabs{padding:8px;gap:10px;grid-template-columns:repeat(3,1fr);} .mtab{font-size:20px;padding:17px 12px 16px;min-height:122px;}
     .mtab .chapter-icon{font-size:34px;margin-bottom:4px;}
     .mtab .chapter-name{font-size:21px;}
     .mtab .chapter-place{font-size:15px;}
@@ -355,6 +362,7 @@
   /* ===== 桌機/大螢幕：關卡改多欄網格，善用橫向空間，不再是中間一直條 ===== */
   @media (min-width:900px){
     .wrap{max-width:1100px;}
+    .modetabs{grid-template-columns:repeat(6,1fr);}
     .stages{grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px 18px;padding:6px 2px;}
     .stages::before{display:none;}                                   /* 隱藏中間路徑線 */
     .stage,.stage:nth-child(odd),.stage:nth-child(even){width:auto;justify-self:stretch;}
@@ -386,6 +394,7 @@
         <button class="mtab" data-mode="div"><span class="chapter-icon ui-mark">÷</span><span class="chapter-name">除法山谷</span><span class="chapter-place">小三挑戰</span></button>
         <button class="mtab" data-mode="all"><span class="chapter-icon ui-mark">±×÷</span><span class="chapter-name">全能綜合</span><span class="chapter-place">四則挑戰</span></button>
         <button class="mtab" data-mode="adv"><span class="chapter-icon ui-mark">進</span><span class="chapter-name">進階挑戰</span><span class="chapter-place">三~六年級</span></button>
+        <button class="mtab" data-mode="frac"><span class="chapter-icon ui-mark">½</span><span class="chapter-name">分數樂園</span><span class="chapter-place">四~六年級</span></button>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <strong style="font-size:17px;">選擇關卡</strong>
@@ -529,6 +538,16 @@ const STAGE_SETS = {
     {id:'v7', type:'speed', name:'速率'},
     {id:'v8', type:'percent', name:'百分率與折扣', special:true},
     {id:'v9', type:'ratio', name:'比與比值（化簡比）', special:true},
+  ],
+  frac: [
+    {id:'f1', type:'fr_red', name:'約分・最簡分數'},
+    {id:'f2', type:'fr_addsame', name:'同分母加減'},
+    {id:'f3', type:'fr_mixed', name:'假分數↔帶分數'},
+    {id:'f4', type:'fr_adddiff', name:'異分母加減'},
+    {id:'f5', type:'fr_muli', name:'分數×整數'},
+    {id:'f6', type:'fr_mul', name:'分數×分數', special:true},
+    {id:'f7', type:'fr_div', name:'分數÷分數', special:true},
+    {id:'f8', type:'fr_ratio', name:'比值（分數）', special:true},
   ],
 };
 let curMode = 'mult';
@@ -747,6 +766,7 @@ function stageIcon(stage){
   if(stage.type==='speed') return '速';
   if(stage.type==='percent') return '%';
   if(stage.type==='ratio') return ':';
+  if(stage.type && stage.type.indexOf('fr_')===0) return '½';
   return stage.n || '×';
 }
 
@@ -1186,6 +1206,111 @@ function makeAdvQuestion(stage){
   return q;
 }
 
+/* ===================== 分數樂園（分數顯示元件＋題型） ===================== */
+function fracReduce(n,d){ const g=gcd(n,d)||1; return [n/g,d/g]; }
+function fracCanon(n,d){
+  if(d===0) d=1; n=Math.round(Math.abs(n)); d=Math.round(Math.abs(d));
+  let [rn,rd]=fracReduce(n,d);
+  if(rd===1) return String(rn);
+  if(rn>rd){ const w=Math.floor(rn/rd), rem=rn%rd; return rem===0?String(w):`${w}_${rem}/${rd}`; }
+  return `${rn}/${rd}`;
+}
+function fracBox(n,d){ return `<span class="fr"><span class="nu">${n}</span><span class="de">${d}</span></span>`; }
+function fracHTML(tok){ tok=String(tok);
+  if(/^\d+_\d+\/\d+$/.test(tok)){ const [w,fr]=tok.split('_'); const [n,d]=fr.split('/'); return `<span class="mixed"><span class="wh">${w}</span>${fracBox(n,d)}</span>`; }
+  if(/^-?\d+\/\d+$/.test(tok)){ const [n,d]=tok.split('/'); return fracBox(n,d); }
+  return tok;
+}
+function frac(n,d){ return fracBox(n,d); }
+function fracQ(main, N, D, mistakes, steps, key, review){
+  const ans=fracCanon(N,D);
+  const cand=(mistakes||[]).map(m=>fracCanon(m[0],m[1])).filter(t=>t!==ans);
+  return { text:advText(main,''), sub:'', options:strOptions(ans,cand), answer:ans, key, review, steps };
+}
+function genFracReduce(){
+  let rn,rd; do{ rn=rnd(1,8); rd=rnd(2,9); }while(rn>=rd||gcd(rn,rd)!==1);
+  const m=rnd(2,6), n=rn*m, d=rd*m;
+  return fracQ(`${frac(n,d)} 化成最簡分數 = ?`, rn, rd,
+    [[rn+1,rd],[rn,rd+1],[rd,rn],[rn*2,rd]],
+    [`分子分母的最大公因數是 ${m}`, `同除以 ${m}：${frac(n,d)} = ${frac(rn,rd)}`],
+    `frac:red:${n}:${d}`, `${n}/${d}→${rn}/${rd}`);
+}
+function genFracAddSame(){
+  const d=rnd(3,9); let a=rnd(1,d-1), b=rnd(1,d-1);
+  const add=rnd(0,1)===0; if(!add && a<b){ [a,b]=[b,a]; }
+  const N=add?a+b:a-b, op=add?'+':'−';
+  return fracQ(`${frac(a,d)} ${op} ${frac(b,d)} = ?`, N, d,
+    [[N,d+d],[add?Math.abs(a-b):a+b,d],[N+1,d],[N,Math.max(2,d-1)]],
+    [`同分母，分母不變，分子${add?'相加':'相減'}`, `${a} ${op} ${b} = ${N} → ${frac(N,d)}`+(gcd(N,d)>1?` = ${fracHTML(fracCanon(N,d))}`:'')],
+    `frac:as:${a}:${b}:${d}:${add?'p':'m'}`, `${a}/${d}${op}${b}/${d}`);
+}
+function genFracAddDiff(){
+  let d1=rnd(2,6), d2=rnd(2,6); while(d2===d1){ d2=rnd(2,6); }
+  let A=rnd(1,d1-1), B=rnd(1,d2-1);
+  const L=d1*d2/gcd(d1,d2);
+  const add=rnd(0,1)===0;
+  let na=A*(L/d1), nb=B*(L/d2);
+  if(!add && na<nb){ [d1,d2]=[d2,d1]; [A,B]=[B,A]; na=A*(L/d1); nb=B*(L/d2); }
+  const N=add?na+nb:na-nb, op=add?'+':'−';
+  return fracQ(`${frac(A,d1)} ${op} ${frac(B,d2)} = ?`, N, L,
+    [[add?A+B:Math.abs(A-B),d1+d2],[N,L+1],[N+1,L],[add?na+nb:na-nb,Math.max(d1,d2)]],
+    [`先通分，公分母 = ${L}`, `${frac(A,d1)} = ${frac(na,L)}，${frac(B,d2)} = ${frac(nb,L)}`, `分子${add?'相加':'相減'}：${na} ${op} ${nb} = ${N} → ${fracHTML(fracCanon(N,L))}`],
+    `frac:ad:${A}:${d1}:${B}:${d2}:${add?'p':'m'}`, `${A}/${d1}${op}${B}/${d2}`);
+}
+function genFracMixed(){
+  const d=rnd(2,9), w=rnd(1,4), rem=rnd(1,d-1), n=w*d+rem;
+  if(rnd(0,1)===0){
+    const ans=`${w}_${rem}/${d}`;
+    const cand=[`${w+1}_${rem}/${d}`, `${w}_${rem+1<d?rem+1:1}/${d}`, `${rem}_${w}/${d}`, `${w}/${d}`];
+    return { text:advText(`${frac(n,d)} = ?（帶分數）`,''), sub:'', options:strOptions(ans,cand), answer:ans,
+      key:`frac:i2m:${n}:${d}`, review:`${n}/${d}=${ans}`,
+      steps:[`${n} ÷ ${d} = ${w} 餘 ${rem}`, `商當整數、餘數當分子 → ${fracHTML(ans)}`] };
+  }
+  const ans=`${n}/${d}`;
+  const cand=[`${w*d}/${d}`, `${w+rem}/${d}`, `${n+1}/${d}`, `${n}/${d+1}`];
+  return { text:advText(`${fracHTML(`${w}_${rem}/${d}`)} = ?（假分數）`,''), sub:'', options:strOptions(ans,cand), answer:ans,
+    key:`frac:m2i:${n}:${d}`, review:`${w} ${rem}/${d}=${n}/${d}`,
+    steps:[`整數 × 分母 + 分子：${w} × ${d} + ${rem} = ${n}`, `所以 = ${frac(n,d)}`] };
+}
+function genFracMulInt(){
+  const d=rnd(2,9), a=rnd(1,d-1), k=rnd(2,6), N=a*k;
+  return fracQ(`${frac(a,d)} × ${k} = ?`, N, d,
+    [[a,d*k],[a+k,d],[N,d*k],[N+1,d]],
+    [`分子乘以整數，分母不變`, `${a} × ${k} = ${N} → ${frac(N,d)}`+(gcd(N,d)>1?` = ${fracHTML(fracCanon(N,d))}`:'')],
+    `frac:mi:${a}:${d}:${k}`, `${a}/${d}×${k}`);
+}
+function genFracMul(){
+  const b=rnd(2,7), d=rnd(2,7), a=rnd(1,b-1), c=rnd(1,d-1), N=a*c, D=b*d;
+  return fracQ(`${frac(a,b)} × ${frac(c,d)} = ?`, N, D,
+    [[a+c,b+d],[a*d,b*c],[N+1,D],[N,Math.max(2,D-1)]],
+    [`分子乘分子、分母乘分母`, `${a}×${c} = ${N}，${b}×${d} = ${D} → ${frac(N,D)}`+(gcd(N,D)>1?` = ${fracHTML(fracCanon(N,D))}`:'')],
+    `frac:ml:${a}:${b}:${c}:${d}`, `${a}/${b}×${c}/${d}`);
+}
+function genFracDiv(){
+  const b=rnd(2,7), d=rnd(2,7), a=rnd(1,b-1), c=rnd(1,d-1), N=a*d, D=b*c;
+  return fracQ(`${frac(a,b)} ÷ ${frac(c,d)} = ?`, N, D,
+    [[a*c,b*d],[a+d,b+c],[N+1,D],[c*b,a*d]],
+    [`除以一個分數 = 乘以它的倒數`, `${frac(a,b)} × ${frac(d,c)} = ${frac(N,D)}`+(gcd(N,D)>1?` = ${fracHTML(fracCanon(N,D))}`:'')],
+    `frac:dv:${a}:${b}:${c}:${d}`, `${a}/${b}÷${c}/${d}`);
+}
+function genFracRatio(){
+  let x,y; do{ x=rnd(2,9); y=rnd(2,9); }while(x===y);
+  const m=rnd(1,4), a=x*m, b=y*m;
+  return fracQ(`${a} : ${b} 的比值 = ?`, a, b,
+    [[b,a],[a+1,b],[a,b+1],[a*2,b]],
+    [`比值就是「前項 ÷ 後項」`, `${a} ÷ ${b} = ${frac(a,b)}`+(gcd(a,b)>1?` = ${fracHTML(fracCanon(a,b))}`:'')],
+    `frac:rt:${a}:${b}`, `${a}:${b}比值`);
+}
+function makeFracQuestion(stage){
+  const gens={fr_red:genFracReduce,fr_addsame:genFracAddSame,fr_adddiff:genFracAddDiff,fr_mixed:genFracMixed,fr_muli:genFracMulInt,fr_mul:genFracMul,fr_div:genFracDiv,fr_ratio:genFracRatio};
+  const gen=gens[stage.type]||genFracReduce;
+  let q=null;
+  for(let i=0;i<24;i++){ q=gen(); if(q && !(G && G.recentKeys && G.recentKeys.includes(q.key))) break; }
+  if(!q) q=gen();
+  if(G && q){ G.recentKeys=G.recentKeys||[]; G.recentKeys.push(q.key); while(G.recentKeys.length>40) G.recentKeys.shift(); G.lastBand=null; }
+  return q;
+}
+
 function makeQuestion(stage){
   if(stage.type==='review'){
     const weak=weakCandidates();
@@ -1213,6 +1338,7 @@ function makeQuestion(stage){
     return { text:`${q.a} ${q.op} ${q.b}`, sub:'= ?', options:numberOptions(q.ans,deltas), answer:String(q.ans), key:q.key, review:`${q.a} ${q.op} ${q.b}` };
   }
   if(stage.type==='word') return makeWordQuestion();
+  if(stage.type.indexOf('fr_')===0) return makeFracQuestion(stage);
   if(['unit1','unit2','round','mixops','factor','average','speed','percent','ratio'].includes(stage.type)) return makeAdvQuestion(stage);
   if(stage.type==='allmix') return questionFromCandidate(pickNext(allMixCandidates(stage)));
   if(stage.type==='division') return questionFromCandidate(pickNext(divisionCandidates(stage)));
@@ -1295,7 +1421,7 @@ function nextQuestion(){
   const box=$('#options'); box.innerHTML='';
   G.q.options.forEach((opt,idx)=>{
     const b=document.createElement('button');
-    b.className='opt enter'; b.textContent=opt;
+    b.className='opt enter'; b.dataset.val=opt; b.innerHTML=fracHTML(opt);
     b.style.setProperty('--i',idx);
     b.onclick=()=>answer(b,opt);
     box.appendChild(b);
@@ -1331,7 +1457,7 @@ function answer(btn, choice){
     sBad();
     if(navigator.vibrate) navigator.vibrate(120);
     // 標出正確答案
-    document.querySelectorAll('.opt').forEach(o=>{ if(o.textContent===G.q.answer) o.classList.add('correct'); });
+    document.querySelectorAll('.opt').forEach(o=>{ if(o.dataset.val===G.q.answer) o.classList.add('correct'); });
   }
   updateHud();
   if(G.score>=GOAL){ G.cleared=true; setTimeout(()=>{ clearInterval(timerId); endGame(true); },600); return; }
