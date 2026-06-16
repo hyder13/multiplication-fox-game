@@ -127,6 +127,18 @@
   .spk:active{transform:scale(.92);}
   .wordq .enw{display:inline-block;font-size:1.5em;letter-spacing:.5px;color:#23506f;}
   .wordq .zhw{display:inline-block;font-size:1.3em;color:#3a2410;}
+  .options.spelling{display:block;}
+  .spellslots{display:flex;justify-content:center;gap:7px;margin:6px 0 14px;flex-wrap:wrap;}
+  .spellslots .slot{min-width:26px;height:40px;line-height:40px;border-bottom:3px solid #8a5523;font-size:30px;font-weight:900;color:#3a2410;text-align:center;}
+  .spellslots.good .slot{color:#1f8a4c;border-color:#1f8a4c;}
+  .spellslots.bad .slot{color:#c0392b;border-color:#c0392b;}
+  .spellanswer{text-align:center;font-size:22px;font-weight:900;color:#1f8a4c;margin:-4px 0 10px;letter-spacing:2px;}
+  .tiles{display:flex;flex-wrap:wrap;justify-content:center;gap:9px;}
+  .tile{width:48px;height:54px;font-size:28px;font-weight:900;border:3px solid #70431f;border-radius:12px;
+    background:linear-gradient(180deg,#fff3d0,#ffd98c);color:#5a2f0c;cursor:pointer;box-shadow:0 5px 0 #9a6322;transition:transform .07s,box-shadow .07s;}
+  .tile:active{transform:translateY(3px);box-shadow:0 2px 0 #9a6322;}
+  .tile.used{opacity:.28;pointer-events:none;}
+  .spellctl{display:block;margin:14px auto 0;border:2px solid #70431f;border-radius:12px;background:#fff;color:#5a2f0c;font-weight:900;font-size:16px;padding:9px 20px;cursor:pointer;}
   .rad{border-top:1.5px solid currentColor;padding:0 .12em;margin-left:.04em;}
   .opt sup,.question sup{font-size:.62em;}
   .mtab.active{filter:saturate(1.12) brightness(1.08);box-shadow:0 5px 0 #d49b35,0 0 0 3px #fff1a3,inset 0 0 0 2px rgba(255,255,255,.24);}
@@ -1776,7 +1788,9 @@ function makeEngQuestion(stage){
   if(G){ G.recentKeys=G.recentKeys||[]; G.recentKeys.push(key); while(G.recentKeys.length>40) G.recentKeys.shift(); G.lastBand=null; }
   const others=shuffle(list.filter(x=>x[0]!==en));
   const canSpeak=typeof window!=='undefined' && window.speechSynthesis;
-  const t=rnd(0, canSpeak?2:1);
+  const canSpell=/^[a-z]+$/.test(en) && en.length<=8;
+  const pool=[0,1]; if(canSpeak) pool.push(2); if(canSpell) pool.push(3);
+  const t=pool[rnd(0,pool.length-1)];
   const spk=`<button class="spk" onclick="speakWord('${en}')" aria-label="唸出 ${en}">🔊</button>`;
   if(t===0){ // 看英文選中文
     return { text:`<span class="wordq">${spk} <b class="enw">${en}</b><span class="ask">是什麼意思？</span></span>`, sub:'',
@@ -1786,9 +1800,16 @@ function makeEngQuestion(stage){
     return { text:`<span class="wordq"><b class="zhw">${zh}</b><span class="ask">的英文是哪一個？</span></span>`, sub:'',
       options:shuffle([en,...others.slice(0,3).map(x=>x[0])]), answer:en, key, review:`${zh} = ${en}` };
   }
-  // 聽發音選中文
-  return { text:`<span class="wordq">${spk}<span class="ask">聽聽看，這個字是什麼意思？</span></span>`, sub:'',
-    options:shuffle([zh,...others.slice(0,3).map(x=>x[1])]), answer:zh, key, review:`(聽) ${en} = ${zh}`, autoSpeak:en };
+  if(t===2){ // 聽發音選中文
+    return { text:`<span class="wordq">${spk}<span class="ask">聽聽看，這個字是什麼意思？</span></span>`, sub:'',
+      options:shuffle([zh,...others.slice(0,3).map(x=>x[1])]), answer:zh, key, review:`(聽) ${en} = ${zh}`, autoSpeak:en };
+  }
+  // 拼字：點字母拼出單字
+  const alpha='abcdefghijklmnopqrstuvwxyz', extra=[];
+  if(en.length<=6){ while(extra.length<2){ const c=alpha[rnd(0,25)]; if(!en.includes(c)&&!extra.includes(c)) extra.push(c); } }
+  const tiles=shuffle(en.split('').concat(extra));
+  return { spell:true, text:`<span class="wordq">${spk} <b class="zhw">${zh}</b><span class="ask">拼出英文單字（點字母）</span></span>`,
+    sub:'', tiles, answer:en, key, review:`拼字 ${zh} = ${en}`, autoSpeak:en };
 }
 STAGE_SETS.eng = ENG_THEMES.map(t=>({id:'e_'+t.id, type:'eng', theme:t.id, name:t.name}));
 
@@ -1904,8 +1925,9 @@ function nextQuestion(){
   $('#qMascot').classList.remove('happy','sad');
   $('#combo').textContent = G.combo>=2 ? `COMBO ${G.combo}` : '';
   $('#question').innerHTML = G.q.text + (G.q.sub?` <small>${G.q.sub}</small>`:'');
-  const box=$('#options'); box.innerHTML='';
-  G.q.options.forEach((opt,idx)=>{
+  const box=$('#options'); box.innerHTML=''; box.classList.toggle('spelling', !!G.q.spell);
+  if(G.q.spell){ renderSpell(); }
+  else G.q.options.forEach((opt,idx)=>{
     const b=document.createElement('button');
     b.className='opt enter'; b.dataset.val=opt; b.innerHTML=mathHTML(opt);
     b.style.setProperty('--i',idx);
@@ -1919,38 +1941,85 @@ function starMarkup(text){
   return text.split('').map((ch,i)=>`<span style="--i:${i}">${ch}</span>`).join('');
 }
 
+// 共用：根據對錯計分、表情、音效（anchor 用來浮出 +分數）
+function awardResult(correct, elapsed, anchor){
+  recordFact(G.q, correct, elapsed);
+  if(correct){
+    const fast = elapsed<FAST_MS, pts = fast?PTS_FAST:PTS_SLOW;
+    G.score+=pts; G.correct++; G.combo++; G.maxCombo=Math.max(G.maxCombo,G.combo);
+    setMascot($('#qMascot'), G.combo>=5?'excited':'correct');
+    $('#qMascot').classList.remove('happy','sad'); void $('#qMascot').offsetWidth; $('#qMascot').classList.add('happy');
+    if(anchor) floatText(anchor, `+${pts}${fast?' FAST':''}`, fast?'#28c76f':'#28a745');
+    fast?sFast():sGood();
+  } else {
+    G.combo=0;
+    setMascot($('#qMascot'),'wrong');
+    $('#qMascot').classList.remove('happy','sad'); void $('#qMascot').offsetWidth; $('#qMascot').classList.add('sad');
+    if(anchor) floatText(anchor,'再試試','#ff6b6b');
+    sBad();
+    if(navigator.vibrate) navigator.vibrate(120);
+  }
+  updateHud();
+}
+
 function answer(btn, choice){
   if(G.locked) return; G.locked=true;
   G.total++;
   const correct = choice===G.q.answer;
   const elapsed = performance.now()-G.qStart;
-  recordFact(G.q, correct, elapsed);
   document.querySelectorAll('.opt').forEach(o=>o.classList.add('disabled'));
-  if(correct){
-    const fast = elapsed<FAST_MS;
-    const pts = fast?PTS_FAST:PTS_SLOW;
-    G.score+=pts; G.correct++; G.combo++; G.maxCombo=Math.max(G.maxCombo,G.combo);
-    btn.classList.add('correct');
-    setMascot($('#qMascot'), G.combo>=5?'excited':'correct');
-    $('#qMascot').classList.remove('happy','sad'); void $('#qMascot').offsetWidth; $('#qMascot').classList.add('happy');
-    floatText(btn, `+${pts}${fast?' FAST':''}`, fast?'#28c76f':'#28a745');
-    fast?sFast():sGood();
-  } else {
-    G.combo=0;
-    btn.classList.add('wrong');
-    setMascot($('#qMascot'),'wrong');
-    $('#qMascot').classList.remove('happy','sad'); void $('#qMascot').offsetWidth; $('#qMascot').classList.add('sad');
-    floatText(btn,'再試試','#ff6b6b');
-    sBad();
-    if(navigator.vibrate) navigator.vibrate(120);
-    // 標出正確答案
-    document.querySelectorAll('.opt').forEach(o=>{ if(o.dataset.val===G.q.answer) o.classList.add('correct'); });
-  }
-  updateHud();
+  if(correct) btn.classList.add('correct');
+  else { btn.classList.add('wrong'); document.querySelectorAll('.opt').forEach(o=>{ if(o.dataset.val===G.q.answer) o.classList.add('correct'); }); }
+  awardResult(correct, elapsed, btn);
   if(G.score>=GOAL){ G.cleared=true; setTimeout(()=>{ clearInterval(timerId); endGame(true); },600); return; }
   if(G.q.steps && G.q.steps.length){ showExplain(correct); return; }
   setTimeout(nextQuestion, correct?550:1000);
 }
+
+/* ---- 拼字題（點字母拼出單字） ---- */
+function renderSpellSlots(){
+  const w=G.q.answer, built=G.spell.picked.map(i=>G.spell.tiles[i]);
+  const slots=$('#spellSlots'); if(!slots) return; slots.innerHTML='';
+  for(let i=0;i<w.length;i++){ const s=document.createElement('span'); s.className='slot'+(built[i]!=null?' filled':''); s.textContent=built[i]!=null?built[i]:''; slots.appendChild(s); }
+}
+function spellTap(i,b){
+  if(G.locked || G.spell.picked.includes(i)) return;
+  G.spell.picked.push(i); b.classList.add('used'); b.disabled=true; sClick();
+  renderSpellSlots();
+  if(G.spell.picked.length===G.q.answer.length) setTimeout(spellCheck,180);
+}
+function spellBack(){
+  if(G.locked) return;
+  const i=G.spell.picked.pop(); if(i==null) return;
+  const t=document.querySelector(`.tile[data-i="${i}"]`); if(t){ t.classList.remove('used'); t.disabled=false; }
+  renderSpellSlots();
+}
+function spellCheck(){
+  if(G.locked) return; G.locked=true; G.total++;
+  const built=G.spell.picked.map(i=>G.spell.tiles[i]).join('');
+  const correct = built===G.q.answer;
+  const elapsed = performance.now()-G.qStart;
+  const slots=$('#spellSlots');
+  slots.classList.add(correct?'good':'bad');
+  if(!correct){ const a=$('#spellAnswer'); a.textContent='正確：'+G.q.answer; a.style.display=''; speakWord(G.q.answer); }
+  document.querySelectorAll('.tile,.spellctl').forEach(b=>b.disabled=true);
+  awardResult(correct, elapsed, slots);
+  if(G.score>=GOAL){ G.cleared=true; setTimeout(()=>{ clearInterval(timerId); endGame(true); },800); return; }
+  setTimeout(nextQuestion, correct?800:1500);
+}
+function renderSpell(){
+  const box=$('#options');
+  G.spell={ tiles:G.q.tiles.slice(), picked:[] };
+  const slots=document.createElement('div'); slots.className='spellslots'; slots.id='spellSlots'; box.appendChild(slots);
+  const ans=document.createElement('div'); ans.className='spellanswer'; ans.id='spellAnswer'; ans.style.display='none'; box.appendChild(ans);
+  const tiles=document.createElement('div'); tiles.className='tiles';
+  G.q.tiles.forEach((ch,i)=>{ const b=document.createElement('button'); b.className='tile'; b.dataset.i=i; b.textContent=ch; b.onclick=()=>spellTap(i,b); tiles.appendChild(b); });
+  box.appendChild(tiles);
+  const ctl=document.createElement('button'); ctl.className='spellctl'; ctl.textContent='⌫ 刪除'; ctl.onclick=spellBack; box.appendChild(ctl);
+  renderSpellSlots();
+}
+
+
 
 // 應用題作答後，顯示「先算…再算…」兩步解法，並暫停計時讓孩子看懂再繼續。
 function showExplain(correct){
